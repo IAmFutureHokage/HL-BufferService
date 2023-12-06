@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package hydrologybuffrt;
+
+option go_package = "github.com/IAmFutureHokage/HL-BufferService";
+
+service HydrologyBufferService {
+    rpc AddTelegram(AddTelegramRequest) returns (AddTelegramResponse);
+    rpc RemoveTelegrams(RemoveTelegramsRequest) returns (RemoveTelegramsResponse);
+    rpc UpdateTelegramByInfo(UpdateTelegramByInfoRequest) returns (UpdateTelegramResponse);
+    rpc UpdateTelegramByCode(UpdateTelegramByCodeRequest) returns (UpdateTelegramResponse);
+    rpc GetTelegram(GetTelegramRequest) returns (GetTelegramResponse);
+    rpc GetTelegrams(GetTelegramsRequest) returns (GetTelegramsResponse);
+    rpc GetTelegramCodeByInfo(GetTelegramCodeByInfoRequest) returns (GetTelegramCodeByInfoResponse);
+    rpc GetTelegramInfoByCode(GetTelegramInfoByCodeRequest) returns (GetTelegramInfoByCodeResponse);
+    rpc TransferToSystem(TransferToSystemRequest) returns (TransferToSystemResponse);
+}
+
+message Telegram {
+    string id = 1;
+    string code = 2;
+    google.protobuf.Timestamp datetime = 3;
+    string post_code = 4;
+    int32 telegram_date = 5;
+    int32 telegram_time = 6;
+    bool is_dangerous = 7;
+    int32 water_level_on_time = 8;
+    int32 delta_water_level = 9;
+    int32 water_level_on_20h = 10;
+    Temperature temperature = 11;
+    IcePhenomeniaState ice_phenomenia_state = 12;
+    repeated IcePhenomenia ice_phenomenias = 13;
+}
+
+message Temperature {
+    float water_temperature = 1;
+    int32 air_temperature = 2;
+}
+
+enum IcePhenomeniaState {
+    NONE = 0;
+    TRUE = 1;
+    END = 2;
+}
+
+message IcePhenomenia {
+    int32 phenomen = 1; // енам надо
+    bool is_intensity = 2;
+    int32 intensity = 3; // енам надо
+}
