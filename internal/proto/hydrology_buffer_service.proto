@@ -2,7 +2,7 @@ syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
 
-package hydrologybuffrt;
+package hydrologybuffer;
 
 option go_package = "github.com/IAmFutureHokage/HL-BufferService";
 
@@ -13,31 +13,36 @@ service HydrologyBufferService {
     rpc UpdateTelegramByCode(UpdateTelegramByCodeRequest) returns (UpdateTelegramResponse);
     rpc GetTelegram(GetTelegramRequest) returns (GetTelegramResponse);
     rpc GetTelegrams(GetTelegramsRequest) returns (GetTelegramsResponse);
-    rpc GetTelegramCodeByInfo(GetTelegramCodeByInfoRequest) returns (GetTelegramCodeByInfoResponse);
-    rpc GetTelegramInfoByCode(GetTelegramInfoByCodeRequest) returns (GetTelegramInfoByCodeResponse);
     rpc TransferToSystem(TransferToSystemRequest) returns (TransferToSystemResponse);
 }
 
 message Telegram {
     string id = 1;
-    string code = 2;
     google.protobuf.Timestamp datetime = 3;
     string post_code = 4;
-    int32 telegram_date = 5;
-    int32 telegram_time = 6;
+    uint32 telegram_date = 5;
+    uint32 telegram_time = 6;
     bool is_dangerous = 7;
     int32 water_level_on_time = 8;
     int32 delta_water_level = 9;
     int32 water_level_on_20h = 10;
-    Temperature temperature = 11;
-    IcePhenomeniaState ice_phenomenia_state = 12;
-    repeated IcePhenomenia ice_phenomenias = 13;
+    float water_temperature = 11;
+    int32 air_temperature = 12;
+    IcePhenomeniaState ice_phenomenia_state = 13;
+    repeated IcePhenomenia ice_phenomenias = 14;
+    uint32 ice_height = 15;
+    SnowHeight snow_height = 16;
+    float water_flow = 17;
+    float precipitation_value = 18;
+    PrecipitationDuration precipitation_duration = 19;
+    bool is_reservoir = 20;
+    uint32 reservoir_date = 21;
+    ReservoirData reservoir_data = 22;
+    bool is_reservoir_water_inflow = 23;
+    uint32 is_reservoir_water_inflow_date = 24;
+    ReservoirWaterInflowData reservoir_water_inflow_data = 25;
 }
 
-message Temperature {
-    float water_temperature = 1;
-    int32 air_temperature = 2;
-}
 
 enum IcePhenomeniaState {
     NONE = 0;
@@ -45,8 +50,101 @@ enum IcePhenomeniaState {
     END = 2;
 }
 
+enum SnowHeight {
+    NULL = 0;
+    LESS_5 = 1;
+    FROM_5_TO_10 = 2;
+	FROM_11_TO_15 = 3;
+	FROM_16_TO_20 = 4;
+	FROM_21_TO_25 = 5;
+	FROM_26_TO_35 = 6;
+	FROM_36_TO_50 = 7;
+	FROM_51_TO_70 = 8;
+	MORE_70 = 9;
+}
+
+enum PrecipitationDuration {
+    EMPTY = 0;
+    LESS_1 = 1;
+    FROM_1_TO_3 = 2;
+	FROM_3_TO_6 = 3;
+	FROM_6_TO_12 = 4;
+	MORE_12 = 5;
+}
+
 message IcePhenomenia {
     int32 phenomen = 1; // енам надо
     bool is_intensity = 2;
-    int32 intensity = 3; // енам надо
+    int32 intensity = 3;
+}
+
+message ReservoirData {
+    uint32 headwater_level = 1;
+    uint32 average_reservoir_level = 2;
+    uint32 downstream_level = 3;
+    float reservoir_volume = 4;
+}
+
+message ReservoirWaterInflowData {
+    float inflow = 1;
+    float reset = 2;
+}
+
+message AddTelegramRequest {
+    string code = 1;
+}
+
+message AddTelegramResponse {
+    Telegram telegram = 1;
+    string telegram_code = 2;
+}
+
+message RemoveTelegramsRequest {
+    repeated string id = 1;
+}
+
+message RemoveTelegramsResponse {
+    bool success = 1;
+}
+
+message UpdateTelegramByInfoRequest {
+    Telegram telegram = 1;
+}
+
+message UpdateTelegramByCodeRequest {
+    string id = 1;
+    string telegram_code = 2;
+}
+
+message UpdateTelegramResponse {
+    Telegram telegram = 1;
+    string telegram_code = 2;
+}
+
+message GetTelegramRequest {
+    string id = 1;
+}
+
+message GetTelegramResponse {
+    Telegram Telegram = 1;
+    string telegram_code = 2;
+}
+
+message GetTelegramsRequest {
+    uint32 page = 3; 
+}
+
+message GetTelegramsResponse {
+    uint32 page = 1;
+    uint32 max_page = 2;
+    repeated Telegram telegrams = 3;
+    repeated string telegram_codes = 4;
+}
+
+message TransferToSystemRequest {
+    repeated string ids = 1;
+}
+
+message TransferToSystemResponse {
+    bool success = 1;
 }
