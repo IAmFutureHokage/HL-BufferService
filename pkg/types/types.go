@@ -1,23 +1,31 @@
 package types
 
+import "math"
+
+const (
+	CouldNotMeasure          = math.MinInt32
+	CouldNotMeasureByte byte = 100
+)
+
 type PostCode string
 
 type IsDangerous bool
 
 type DateAndTime struct {
-	Date byte
-	Time byte
+	Date        byte
+	Time        byte
+	EndBlockNum byte
 }
 
-type WaterLevelOnTime int16
+type WaterLevelOnTime int32
 
-type DeltaWaterLevel int16
+type DeltaWaterLevel int32
 
-type WaterLevelOn20h int16
+type WaterLevelOn20h int32
 
 type Temperature struct {
-	WaterTemperature *float32
-	AirTemperature   *int8
+	WaterTemperature *float64
+	AirTemperature   *int32
 }
 
 type Phenomenia struct {
@@ -27,39 +35,28 @@ type Phenomenia struct {
 }
 
 type IceInfo struct {
-	Ice  *uint16
+	Ice  *int32
 	Snow *SnowHeight
 }
 
-type Waterflow float32
+type Waterflow float64
 type Precipitation struct {
-	Value    *float32
+	Value    *float64
 	Duration *PrecipitationDuration
 }
 
-type IsReservoir struct {
-	State bool
-	Date  byte
-}
+type IsReservoirDate byte
 
-type HeadwaterLevel uint32
+type HeadwaterLevel int32
 
-type AverageReservoirLevel uint32
+type AverageReservoirLevel int32
 
-type DownstreamLevel uint32
+type DownstreamLevel int32
 
-type ReservoirVolume float32
+type ReservoirVolume float64
 
-type IsReservoirWaterInflow struct {
-	IsReservoirWaterInflow bool
-	Date                   byte
-}
+type IsReservoirWaterInflowDate byte
 
-type Inflow float32
+type Inflow float64
 
-type Reset float32
-
-type PrevDay struct {
-	IsNextDay bool
-	Date      byte
-}
+type Reset float64

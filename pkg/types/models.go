@@ -15,18 +15,18 @@ type ReservoirWaterInflow struct {
 type Telegram struct {
 	PostCode PostCode
 	DateAndTime
-	IsDangerous            IsDangerous
-	WaterLevelOnTime       *WaterLevelOnTime
-	DeltaWaterLevel        *DeltaWaterLevel
-	WaterLevelOn20h        *WaterLevelOn20h
-	Temperature            *Temperature
-	IcePhenomeniaState     *IcePhenomeniaState
-	IcePhenomenia          []*Phenomenia
-	IceInfo                *IceInfo
-	Waterflow              *Waterflow
-	Precipitation          *Precipitation
-	IsReservoir            *IsReservoir
-	Reservoir              *Reservoir
-	IsReservoirWaterInflow *IsReservoirWaterInflow
-	ReservoirWaterInflow   *ReservoirWaterInflow
+	IsDangerous                IsDangerous
+	WaterLevelOnTime           *WaterLevelOnTime
+	DeltaWaterLevel            *DeltaWaterLevel
+	WaterLevelOn20h            *WaterLevelOn20h
+	Temperature                *Temperature
+	IcePhenomeniaState         *IcePhenomeniaState
+	IcePhenomenia              []*Phenomenia
+	IceInfo                    *IceInfo
+	Waterflow                  *Waterflow
+	Precipitation              *Precipitation
+	IsReservoirDate            *IsReservoirDate
+	Reservoir                  *Reservoir
+	IsReservoirWaterInflowDate *IsReservoirWaterInflowDate
+	ReservoirWaterInflow       *ReservoirWaterInflow
 }

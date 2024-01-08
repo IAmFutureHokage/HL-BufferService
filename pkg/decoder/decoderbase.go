@@ -2,10 +2,11 @@ package decoder
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"strconv"
 
-	types "github.com/IAmFutureHokage/HL-Coder/pkg/types"
+	types "github.com/IAmFutureHokage/HL-BufferService/pkg/types"
 )
 
 func checkCodeBlock(s string) error {
@@ -50,9 +51,15 @@ func DateAndTimeDecoder(s string) (*types.DateAndTime, error) {
 		return nil, fmt.Errorf("invalid hour value")
 	}
 
+	endBlockNum, err := strconv.Atoi(s[4:])
+	if err != nil || endBlockNum < 0 || endBlockNum > 7 {
+		return nil, fmt.Errorf("invalid endBlockNum value")
+	}
+
 	return &types.DateAndTime{
-		Date: byte(day),
-		Time: byte(hour),
+		Date:        byte(day),
+		Time:        byte(hour),
+		EndBlockNum: byte(endBlockNum),
 	}, nil
 }
 
@@ -82,7 +89,7 @@ func WaterLevelOnTimeDecoder(s string) (*types.WaterLevelOnTime, error) {
 	}
 
 	if s[1:] == "////" {
-		response := types.WaterLevelOnTime(32767)
+		response := types.WaterLevelOnTime(types.CouldNotMeasure)
 		return &response, nil
 	}
 
@@ -111,7 +118,7 @@ func DeltaWaterLevelDecoder(s string) (*types.DeltaWaterLevel, error) {
 	}
 
 	if s[1:] == "////" {
-		response := types.DeltaWaterLevel(32767)
+		response := types.DeltaWaterLevel(types.CouldNotMeasure)
 		return &response, nil
 	}
 
@@ -146,7 +153,7 @@ func WaterLevelOn20hDecoder(s string) (*types.WaterLevelOn20h, error) {
 	}
 
 	if s[1:] == "////" {
-		response := types.WaterLevelOn20h(32767)
+		response := types.WaterLevelOn20h(types.CouldNotMeasure)
 		return &response, nil
 	}
 
@@ -166,6 +173,7 @@ func WaterLevelOn20hDecoder(s string) (*types.WaterLevelOn20h, error) {
 func TemperatureDecoder(s string) (*types.Temperature, error) {
 
 	err := checkCodeBlock(s)
+
 	if err != nil {
 		return nil, err
 	}
@@ -174,18 +182,26 @@ func TemperatureDecoder(s string) (*types.Temperature, error) {
 		return nil, fmt.Errorf("first character must be '4'")
 	}
 
-	var waterTempPtr *float32
-	if s[1:3] != "//" {
+	var waterTempPtr *float64
+
+	if s[1:3] == "//" {
+		waterTemp := float64(types.CouldNotMeasure)
+		waterTempPtr = &waterTemp
+	} else {
 		waterTemp, err := strconv.Atoi(s[1:3])
 		if err != nil {
 			return nil, fmt.Errorf("Invalid water temperature value")
 		}
-		waterTempFloat := float32(waterTemp) / 10.0
+		waterTempFloat := float64(waterTemp) / 10.0
 		waterTempPtr = &waterTempFloat
 	}
 
-	var airTempPtr *int8
-	if s[3:] != "//" {
+	var airTempPtr *int32
+
+	if s[3:] == "//" {
+		airTemp := int32(types.CouldNotMeasure)
+		airTempPtr = &airTemp
+	} else {
 		airTemp, err := strconv.Atoi(s[3:])
 		if err != nil {
 			return nil, fmt.Errorf("Invalid air temperature value")
@@ -193,8 +209,8 @@ func TemperatureDecoder(s string) (*types.Temperature, error) {
 		if airTemp > 50 {
 			airTemp = 0 - airTemp + 50
 		}
-		airTempInt8 := int8(airTemp)
-		airTempPtr = &airTempInt8
+		airTempInt := int32(airTemp)
+		airTempPtr = &airTempInt
 	}
 
 	return &types.Temperature{
@@ -203,62 +219,66 @@ func TemperatureDecoder(s string) (*types.Temperature, error) {
 	}, nil
 }
 
-func PhenomeniaDecoder(s string) ([]*types.Phenomenia, error) {
+func PhenomeniaDecoder(s string) (*types.IcePhenomeniaState, []*types.Phenomenia, error) {
 
 	err := checkCodeBlock(s)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if s[0] != '5' {
-		return nil, fmt.Errorf("first character must be '5'")
+		return nil, nil, fmt.Errorf("first character must be '5'")
 	}
 
 	if s[1:] == "////" {
-		return []*types.Phenomenia{nil}, nil
+		state := types.IcePhenomeniaState(0)
+		return &state, nil, nil
 	}
 
 	firstPhenomenia, err := strconv.Atoi(s[1:3])
 	if err != nil {
-		return nil, fmt.Errorf("Ivalid phenomenia value")
+		return nil, nil, fmt.Errorf("Ivalid phenomenia value")
 	}
 
 	secondPhenomenia, err := strconv.Atoi(s[3:])
 	if err != nil {
-		return nil, fmt.Errorf("Ivalid phenomenia value")
+		return nil, nil, fmt.Errorf("Ivalid phenomenia value")
 	}
 
 	if firstPhenomenia == secondPhenomenia {
-		return []*types.Phenomenia{
-			{
-				Phenomen:    byte(firstPhenomenia),
-				IsUntensity: false,
-				Intensity:   nil,
-			},
-		}, nil
+		return nil,
+			[]*types.Phenomenia{
+				{
+					Phenomen:    byte(firstPhenomenia),
+					IsUntensity: false,
+					Intensity:   nil,
+				},
+			}, nil
 	}
 
 	if secondPhenomenia < 11 {
 		secondPhenomeniaByte := byte(secondPhenomenia)
-		return []*types.Phenomenia{
-			{
-				Phenomen:    byte(firstPhenomenia),
-				IsUntensity: true,
-				Intensity:   &secondPhenomeniaByte,
-			},
-		}, nil
+		return nil,
+			[]*types.Phenomenia{
+				{
+					Phenomen:    byte(firstPhenomenia),
+					IsUntensity: true,
+					Intensity:   &secondPhenomeniaByte,
+				},
+			}, nil
 	}
 
-	return []*types.Phenomenia{
-		{
-			Phenomen:    byte(firstPhenomenia),
-			IsUntensity: false,
-		},
-		{
-			Phenomen:    byte(secondPhenomenia),
-			IsUntensity: false,
-		},
-	}, nil
+	return nil,
+		[]*types.Phenomenia{
+			{
+				Phenomen:    byte(firstPhenomenia),
+				IsUntensity: false,
+			},
+			{
+				Phenomen:    byte(secondPhenomenia),
+				IsUntensity: false,
+			},
+		}, nil
 }
 
 func IcePhenomeniaStateDecoder(s string) (*types.IcePhenomeniaState, error) {
@@ -267,7 +287,7 @@ func IcePhenomeniaStateDecoder(s string) (*types.IcePhenomeniaState, error) {
 		return nil, fmt.Errorf("Ivalid 6 group")
 	}
 
-	response := types.IcePhenomeniaState(2)
+	response := types.IcePhenomeniaState(1)
 	return &response, nil
 }
 
@@ -282,14 +302,17 @@ func IceInfoDecoder(s string) (*types.IceInfo, error) {
 		return nil, fmt.Errorf("first character must be '7'")
 	}
 
-	var iceHeightPtr *uint16
+	var iceHeightPtr *int32
 	if s[1:4] != "///" {
 		iceHeight, err := strconv.Atoi(s[1:4])
 		if err != nil {
 			return nil, fmt.Errorf("Invalid ice height value")
 		}
-		iceHeightUint := uint16(iceHeight)
+		iceHeightUint := int32(iceHeight)
 		iceHeightPtr = &iceHeightUint
+	} else {
+		iceHeight := int32(types.CouldNotMeasure)
+		iceHeightPtr = &iceHeight
 	}
 
 	var snowHeightPtr *types.SnowHeight
@@ -300,6 +323,9 @@ func IceInfoDecoder(s string) (*types.IceInfo, error) {
 		}
 		snowHeightbyte := types.SnowHeight(byte(snowHeight))
 		snowHeightPtr = &snowHeightbyte
+	} else {
+		snowHeight := types.SnowHeight(types.CouldNotMeasureByte)
+		snowHeightPtr = &snowHeight
 	}
 
 	return &types.IceInfo{
@@ -320,7 +346,7 @@ func WaterflowDecoder(s string) (*types.Waterflow, error) {
 	}
 
 	if s[1:] == "////" {
-		response := types.Waterflow(4294967295)
+		response := types.Waterflow(types.CouldNotMeasure)
 		return &response, nil
 	}
 
@@ -334,10 +360,11 @@ func WaterflowDecoder(s string) (*types.Waterflow, error) {
 		return nil, fmt.Errorf("Ivalid volume value")
 	}
 
-	floatFlow := float64(flow) / 1000.0
+	floatFlow := float64(flow)
 	for i := 0; i < factor; i++ {
 		floatFlow *= 10
 	}
+	floatFlow = math.Round(floatFlow) / 1000.0
 
 	response := types.Waterflow(floatFlow)
 	return &response, nil
@@ -354,7 +381,7 @@ func PrecipitationDecoder(s string) (*types.Precipitation, error) {
 		return nil, fmt.Errorf("first character must be '0'")
 	}
 
-	var valuePtr *float32
+	var valuePtr *float64
 	if s[1:4] != "///" {
 		value, err := strconv.ParseFloat(s[1:4], 32)
 		if err != nil {
@@ -362,14 +389,18 @@ func PrecipitationDecoder(s string) (*types.Precipitation, error) {
 		}
 
 		if value >= 990 {
-			value = (value - 990) / 10
+			value = math.Round((value - 990)) / 10
 		}
 
-		valueFloat32 := float32(value)
-		valuePtr = &valueFloat32
+		valueFloat := float64(value)
+		valuePtr = &valueFloat
+	} else {
+		valueFloat := float64(types.CouldNotMeasure)
+		valuePtr = &valueFloat
 	}
 
 	var durationPtr *types.PrecipitationDuration
+
 	if s[4:] != "/" {
 		duration, err := strconv.Atoi(s[4:])
 		if err != nil || duration < 0 || duration > 4 {
@@ -377,6 +408,9 @@ func PrecipitationDecoder(s string) (*types.Precipitation, error) {
 		}
 
 		durationPrecip := types.PrecipitationDuration(duration)
+		durationPtr = &durationPrecip
+	} else {
+		durationPrecip := types.PrecipitationDuration(types.CouldNotMeasureByte)
 		durationPtr = &durationPrecip
 	}
 
@@ -386,7 +420,7 @@ func PrecipitationDecoder(s string) (*types.Precipitation, error) {
 	}, nil
 }
 
-func IsReservoirDecoder(s string) (*types.IsReservoir, error) {
+func IsReservoirDecoder(s string) (*types.IsReservoirDate, error) {
 	err := checkCodeBlock(s)
 	if err != nil {
 		return nil, err
@@ -401,10 +435,8 @@ func IsReservoirDecoder(s string) (*types.IsReservoir, error) {
 		return nil, fmt.Errorf("invalid day value")
 	}
 
-	return &types.IsReservoir{
-		State: true,
-		Date:  byte(date),
-	}, nil
+	response := types.IsReservoirDate(date)
+	return &response, nil
 }
 
 func HeadwaterLevelDecoder(s string) (*types.HeadwaterLevel, error) {
@@ -419,7 +451,7 @@ func HeadwaterLevelDecoder(s string) (*types.HeadwaterLevel, error) {
 	}
 
 	if s[1:] == "////" {
-		response := types.HeadwaterLevel(4294967295)
+		response := types.HeadwaterLevel(types.CouldNotMeasure)
 		return &response, nil
 	}
 
@@ -444,7 +476,7 @@ func AverageReservoirLevelDecoder(s string) (*types.AverageReservoirLevel, error
 	}
 
 	if s[1:] == "////" {
-		response := types.AverageReservoirLevel(4294967295)
+		response := types.AverageReservoirLevel(types.CouldNotMeasure)
 		return &response, nil
 	}
 
@@ -469,7 +501,7 @@ func DownstreamLevelDecoder(s string) (*types.DownstreamLevel, error) {
 	}
 
 	if s[1:] == "////" {
-		response := types.DownstreamLevel(4294967295)
+		response := types.DownstreamLevel(types.CouldNotMeasure)
 		return &response, nil
 	}
 
@@ -494,7 +526,7 @@ func ReservoirVolumeDecoder(s string) (*types.ReservoirVolume, error) {
 	}
 
 	if s[1:] == "////" {
-		response := types.ReservoirVolume(200000)
+		response := types.ReservoirVolume(types.CouldNotMeasure)
 		return &response, nil
 	}
 
@@ -508,16 +540,17 @@ func ReservoirVolumeDecoder(s string) (*types.ReservoirVolume, error) {
 		return nil, fmt.Errorf("Ivalid volume value")
 	}
 
-	floatVolume := float64(volume) / 1000.0
+	floatVolume := float64(volume)
 	for i := 0; i < factor; i++ {
 		floatVolume *= 10
 	}
+	floatVolume = math.Round(floatVolume) / 1000
 
 	response := types.ReservoirVolume(floatVolume)
 	return &response, nil
 }
 
-func IsReservoirWaterInflowDecoder(s string) (*types.IsReservoirWaterInflow, error) {
+func IsReservoirWaterInflowDecoder(s string) (*types.IsReservoirWaterInflowDate, error) {
 	err := checkCodeBlock(s)
 	if err != nil {
 		return nil, err
@@ -532,10 +565,8 @@ func IsReservoirWaterInflowDecoder(s string) (*types.IsReservoirWaterInflow, err
 		return nil, fmt.Errorf("invalid day value")
 	}
 
-	return &types.IsReservoirWaterInflow{
-		IsReservoirWaterInflow: true,
-		Date:                   byte(date),
-	}, nil
+	response := types.IsReservoirWaterInflowDate(date)
+	return &response, nil
 }
 
 func InflowDecoder(s string) (*types.Inflow, error) {
@@ -550,7 +581,7 @@ func InflowDecoder(s string) (*types.Inflow, error) {
 	}
 
 	if s[1:] == "////" {
-		response := types.Inflow(4294967295)
+		response := types.Inflow(types.CouldNotMeasure)
 		return &response, nil
 	}
 
@@ -564,10 +595,12 @@ func InflowDecoder(s string) (*types.Inflow, error) {
 		return nil, fmt.Errorf("Ivalid oflow value")
 	}
 
-	floatInflow := float64(inflow) / 1000.0
+	floatInflow := float64(inflow)
 	for i := 0; i < factor; i++ {
 		floatInflow *= 10
 	}
+
+	floatInflow = math.Round(floatInflow) / 1000
 
 	response := types.Inflow(floatInflow)
 	return &response, nil
@@ -584,7 +617,7 @@ func ResetDecoder(s string) (*types.Reset, error) {
 	}
 
 	if s[1:] == "////" {
-		response := types.Reset(4294967295)
+		response := types.Reset(types.CouldNotMeasure)
 		return &response, nil
 	}
 
@@ -598,10 +631,11 @@ func ResetDecoder(s string) (*types.Reset, error) {
 		return nil, fmt.Errorf("Ivalid reset value")
 	}
 
-	floatReset := float64(reset) / 1000.0
+	floatReset := float64(reset)
 	for i := 0; i < factor; i++ {
 		floatReset *= 10
 	}
+	floatReset = math.Round(floatReset) / 1000
 
 	response := types.Reset(floatReset)
 	return &response, nil

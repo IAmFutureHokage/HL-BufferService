@@ -3,7 +3,7 @@ package decoder
 import (
 	"strings"
 
-	types "github.com/IAmFutureHokage/HL-Coder/pkg/types"
+	types "github.com/IAmFutureHokage/HL-BufferService/pkg/types"
 )
 
 func FullDecoder(s string) ([]*types.Telegram, error) {
@@ -91,12 +91,11 @@ func Decoder(s string) (*types.Telegram, error) {
 		}
 
 		if block[0] == '5' && !isReservoir && !isResevoirInflow {
-			phenomenia, err := PhenomeniaDecoder(block)
+			state, phenomenia, err := PhenomeniaDecoder(block)
 			if err != nil {
 				return nil, err
 			}
-			state := types.IcePhenomeniaState(1)
-			telegram.IcePhenomeniaState = &state
+			telegram.IcePhenomeniaState = state
 			telegram.IcePhenomenia = append(telegram.IcePhenomenia, phenomenia...)
 			continue
 
@@ -136,13 +135,13 @@ func Decoder(s string) (*types.Telegram, error) {
 			continue
 		}
 		if block[:3] == "944" && !isReservoir && !isResevoirInflow {
-			state, err := IsReservoirDecoder(block)
+			date, err := IsReservoirDecoder(block)
 			if err != nil {
 				return nil, err
 			}
 			telegram.Reservoir = &types.Reservoir{}
 			isReservoir = true
-			telegram.IsReservoir = state
+			telegram.IsReservoirDate = date
 			continue
 		}
 		if block[0] == '1' && isReservoir && !isResevoirInflow {
@@ -178,13 +177,13 @@ func Decoder(s string) (*types.Telegram, error) {
 			continue
 		}
 		if block[:3] == "955" && !isResevoirInflow {
-			data, err := IsReservoirWaterInflowDecoder(block)
+			date, err := IsReservoirWaterInflowDecoder(block)
 			if err != nil {
 				return nil, err
 			}
 			telegram.ReservoirWaterInflow = &types.ReservoirWaterInflow{}
 			isResevoirInflow = true
-			telegram.IsReservoirWaterInflow = data
+			telegram.IsReservoirWaterInflowDate = date
 			continue
 		}
 		if block[0] == '4' && isResevoirInflow {

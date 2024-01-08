@@ -3,8 +3,7 @@ package types
 type IcePhenomeniaState byte
 
 const (
-	None IcePhenomeniaState = iota
-	True
+	NaN = iota
 	Empty
 )
 
