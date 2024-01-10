@@ -18,6 +18,7 @@ service HydrologyBufferService {
 
 message Telegram {
     string id = 1;
+    string group_id = 2;
     google.protobuf.Timestamp datetime = 3;
     string post_code = 4;
     uint32 telegram_date = 5;

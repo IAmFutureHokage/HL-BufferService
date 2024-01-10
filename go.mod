@@ -2,6 +2,8 @@ module github.com/IAmFutureHokage/HL-BufferService
 
 go 1.21.4
 
+require github.com/google/uuid v1.5.0
+
 require (
 	github.com/IAmFutureHokage/HL-Coder v0.0.0-20231203144942-15a4b87bdb31 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect

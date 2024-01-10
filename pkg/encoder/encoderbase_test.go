@@ -3,7 +3,7 @@ package encoder
 import (
 	"testing"
 
-	"github.com/IAmFutureHokage/HL-Coder/pkg/types"
+	types "github.com/IAmFutureHokage/HL-BufferService/pkg/types"
 )
 
 func TestPostCodeEncoder(t *testing.T) {
@@ -50,8 +50,14 @@ func TestDateAndTimeEncoder(t *testing.T) {
 	}{
 		{
 			name:    "Valid DateAndTime",
-			input:   &types.DateAndTime{Date: 15, Time: 12},
+			input:   &types.DateAndTime{Date: 15, Time: 12, EndBlockNum: 1},
 			want:    "15121",
+			wantErr: false,
+		},
+		{
+			name:    "Valid DateAndTime with endcodeblock 6",
+			input:   &types.DateAndTime{Date: 15, Time: 12, EndBlockNum: 6},
+			want:    "15126",
 			wantErr: false,
 		},
 		{
@@ -144,7 +150,7 @@ func TestWaterLevelOnTimeEncoder(t *testing.T) {
 		},
 		{
 			name:    "Special case WaterLevelOnTime",
-			input:   func() *types.WaterLevelOnTime { w := types.WaterLevelOnTime(32767); return &w }(),
+			input:   func() *types.WaterLevelOnTime { w := types.WaterLevelOnTime(types.CouldNotMeasure); return &w }(),
 			want:    "1////",
 			wantErr: false,
 		},
@@ -197,7 +203,7 @@ func TestDeltaWaterLevelEncoder(t *testing.T) {
 		},
 		{
 			name:    "Special case DeltaWaterLevel",
-			input:   func() *types.DeltaWaterLevel { d := types.DeltaWaterLevel(32767); return &d }(),
+			input:   func() *types.DeltaWaterLevel { d := types.DeltaWaterLevel(types.CouldNotMeasure); return &d }(),
 			want:    "2////",
 			wantErr: false,
 		},
@@ -238,7 +244,7 @@ func TestWaterLevelOn20hEncoder(t *testing.T) {
 		},
 		{
 			name:    "Special case WaterLevelOn20h",
-			input:   func() *types.WaterLevelOn20h { w := types.WaterLevelOn20h(32767); return &w }(),
+			input:   func() *types.WaterLevelOn20h { w := types.WaterLevelOn20h(types.CouldNotMeasure); return &w }(),
 			want:    "3////",
 			wantErr: false,
 		},
@@ -279,25 +285,25 @@ func TestTemperatureEncoder(t *testing.T) {
 	}{
 		{
 			name:    "Valid Temperature - both temperatures present",
-			input:   &types.Temperature{WaterTemperature: func() *float32 { f := float32(1.5); return &f }(), AirTemperature: func() *int8 { i := int8(20); return &i }()},
+			input:   &types.Temperature{WaterTemperature: func() *float64 { f := float64(1.5); return &f }(), AirTemperature: func() *int32 { i := int32(20); return &i }()},
 			want:    "41520",
 			wantErr: false,
 		},
 		{
 			name:    "Valid Temperature - only water temperature",
-			input:   &types.Temperature{WaterTemperature: func() *float32 { f := float32(1.5); return &f }(), AirTemperature: nil},
+			input:   &types.Temperature{WaterTemperature: func() *float64 { f := float64(1.5); return &f }(), AirTemperature: func() *int32 { i := int32(types.CouldNotMeasure); return &i }()},
 			want:    "415//",
 			wantErr: false,
 		},
 		{
 			name:    "Valid Temperature - only air temperature",
-			input:   &types.Temperature{WaterTemperature: nil, AirTemperature: func() *int8 { i := int8(-5); return &i }()},
+			input:   &types.Temperature{WaterTemperature: func() *float64 { f := float64(types.CouldNotMeasure); return &f }(), AirTemperature: func() *int32 { i := int32(-5); return &i }()},
 			want:    "4//55",
 			wantErr: false,
 		},
 		{
 			name:    "Valid Temperature - nill temperature",
-			input:   &types.Temperature{WaterTemperature: nil, AirTemperature: nil},
+			input:   &types.Temperature{WaterTemperature: func() *float64 { f := float64(types.CouldNotMeasure); return &f }(), AirTemperature: func() *int32 { i := int32(types.CouldNotMeasure); return &i }()},
 			want:    "4////",
 			wantErr: false,
 		},
@@ -326,12 +332,14 @@ func TestTemperatureEncoder(t *testing.T) {
 func TestIcePhenomeniaEncoder(t *testing.T) {
 	tests := []struct {
 		name    string
+		state   *types.IcePhenomeniaState
 		input   []*types.Phenomenia
 		want    string
 		wantErr bool
 	}{
 		{
-			name: "Valid IcePhenomenia - single phenomenia",
+			name:  "Valid IcePhenomenia - single phenomenia",
+			state: func() *types.IcePhenomeniaState { s := types.IcePhenomeniaState(0); return &s }(),
 			input: []*types.Phenomenia{
 				{Phenomen: 12, IsUntensity: false},
 			},
@@ -339,7 +347,8 @@ func TestIcePhenomeniaEncoder(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Valid IcePhenomenia - multiple phenomenias",
+			name:  "Valid IcePhenomenia - multiple phenomenias",
+			state: func() *types.IcePhenomeniaState { s := types.IcePhenomeniaState(0); return &s }(),
 			input: []*types.Phenomenia{
 				{Phenomen: 12, IsUntensity: false},
 				{Phenomen: 34, IsUntensity: false},
@@ -348,7 +357,8 @@ func TestIcePhenomeniaEncoder(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Valid IcePhenomenia - with intensity",
+			name:  "Valid IcePhenomenia - with intensity",
+			state: func() *types.IcePhenomeniaState { s := types.IcePhenomeniaState(0); return &s }(),
 			input: []*types.Phenomenia{
 				{Phenomen: 12, IsUntensity: true, Intensity: func() *byte { b := byte(10); return &b }()},
 			},
@@ -356,22 +366,36 @@ func TestIcePhenomeniaEncoder(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "First element nil",
-			input:   []*types.Phenomenia{nil},
+			name:    "Empty input with non-nil state",
+			state:   func() *types.IcePhenomeniaState { s := types.IcePhenomeniaState(0); return &s }(), // Ненулевое состояние
+			input:   nil,
 			want:    "5////",
+			wantErr: false,
+		},
+		{
+			name:    "Empty input with nil state",
+			state:   func() *types.IcePhenomeniaState { s := types.IcePhenomeniaState(1); return &s }(),
+			input:   []*types.Phenomenia{},
+			want:    "",
+			wantErr: false,
+		},
+		{
+			name:    "Empty input with nil state",
+			state:   nil,
+			input:   []*types.Phenomenia{},
+			want:    "",
 			wantErr: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := IcePhenomeniaEncoder(tt.input)
+			got, err := IcePhenomeniaEncoder(tt.state, tt.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("IcePhenomeniaEncoder() error = %v, wantErr %v", err, tt.wantErr)
-				return
 			}
 			if got != tt.want {
-				t.Errorf("IcePhenomeniaEncoder() = %v, want %v", got, tt.want)
+				t.Errorf("IcePhenomeniaEncoder() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -421,25 +445,25 @@ func TestIceInfoEncoder(t *testing.T) {
 	}{
 		{
 			name:    "Valid IceInfo - both ice and snow height present",
-			input:   &types.IceInfo{Ice: func() *uint16 { h := uint16(123); return &h }(), Snow: func() *types.SnowHeight { sh := types.SnowHeight(4); return &sh }()},
+			input:   &types.IceInfo{Ice: func() *int32 { h := int32(123); return &h }(), Snow: func() *types.SnowHeight { sh := types.SnowHeight(4); return &sh }()},
 			want:    "71234",
 			wantErr: false,
 		},
 		{
 			name:    "Valid IceInfo - only ice height",
-			input:   &types.IceInfo{Ice: func() *uint16 { h := uint16(123); return &h }(), Snow: nil},
+			input:   &types.IceInfo{Ice: func() *int32 { h := int32(123); return &h }(), Snow: func() *types.SnowHeight { sh := types.SnowHeight(types.CouldNotMeasureByte); return &sh }()},
 			want:    "7123/",
 			wantErr: false,
 		},
 		{
 			name:    "Valid IceInfo - only snow height",
-			input:   &types.IceInfo{Ice: nil, Snow: func() *types.SnowHeight { sh := types.SnowHeight(4); return &sh }()},
+			input:   &types.IceInfo{Ice: func() *int32 { h := int32(types.CouldNotMeasure); return &h }(), Snow: func() *types.SnowHeight { sh := types.SnowHeight(4); return &sh }()},
 			want:    "7///4",
 			wantErr: false,
 		},
 		{
 			name:    "Valid IceInfo - only snow height",
-			input:   &types.IceInfo{Ice: nil, Snow: nil},
+			input:   &types.IceInfo{Ice: func() *int32 { h := int32(types.CouldNotMeasure); return &h }(), Snow: func() *types.SnowHeight { sh := types.SnowHeight(types.CouldNotMeasureByte); return &sh }()},
 			want:    "7////",
 			wantErr: false,
 		},
@@ -480,7 +504,7 @@ func TestWaterflowEncoder(t *testing.T) {
 		},
 		{
 			name:    "Special case Waterflow - maximum value",
-			input:   func() *types.Waterflow { wf := types.Waterflow(100001.0); return &wf }(),
+			input:   func() *types.Waterflow { wf := types.Waterflow(types.CouldNotMeasure); return &wf }(),
 			want:    "8////",
 			wantErr: false,
 		},
@@ -521,19 +545,22 @@ func TestPrecipitationEncoder(t *testing.T) {
 	}{
 		{
 			name:    "Valid Precipitation - both value and duration",
-			input:   &types.Precipitation{Value: func() *float32 { v := float32(0.4); return &v }(), Duration: func() *types.PrecipitationDuration { d := types.PrecipitationDuration(4); return &d }()},
+			input:   &types.Precipitation{Value: func() *float64 { v := float64(0.4); return &v }(), Duration: func() *types.PrecipitationDuration { d := types.PrecipitationDuration(4); return &d }()},
 			want:    "09944",
 			wantErr: false,
 		},
 		{
-			name:    "Valid Precipitation - only value",
-			input:   &types.Precipitation{Value: func() *float32 { v := float32(0.4); return &v }(), Duration: nil},
+			name: "Valid Precipitation - only value",
+			input: &types.Precipitation{Value: func() *float64 { v := float64(0.4); return &v }(), Duration: func() *types.PrecipitationDuration {
+				d := types.PrecipitationDuration(types.CouldNotMeasureByte)
+				return &d
+			}()},
 			want:    "0994/",
 			wantErr: false,
 		},
 		{
 			name:    "Valid Precipitation - only duration",
-			input:   &types.Precipitation{Value: nil, Duration: func() *types.PrecipitationDuration { d := types.PrecipitationDuration(4); return &d }()},
+			input:   &types.Precipitation{Value: func() *float64 { v := float64(types.CouldNotMeasure); return &v }(), Duration: func() *types.PrecipitationDuration { d := types.PrecipitationDuration(4); return &d }()},
 			want:    "0///4",
 			wantErr: false,
 		},
@@ -562,19 +589,19 @@ func TestPrecipitationEncoder(t *testing.T) {
 func TestIsReservoirEncoder(t *testing.T) {
 	tests := []struct {
 		name    string
-		input   *types.IsReservoir
+		input   *types.IsReservoirDate
 		want    string
 		wantErr bool
 	}{
 		{
 			name:    "Valid IsReservoir",
-			input:   &types.IsReservoir{Date: 15},
+			input:   func() *types.IsReservoirDate { date := types.IsReservoirDate(15); return &date }(),
 			want:    "94415",
 			wantErr: false,
 		},
 		{
 			name:    "Invalid IsReservoir - invalid day",
-			input:   &types.IsReservoir{Date: 32},
+			input:   func() *types.IsReservoirDate { date := types.IsReservoirDate(32); return &date }(),
 			want:    "",
 			wantErr: true,
 		},
@@ -615,7 +642,7 @@ func TestHeadwaterLevelEncoder(t *testing.T) {
 		},
 		{
 			name:    "Special case HeadwaterLevel - maximum value",
-			input:   func() *types.HeadwaterLevel { h := types.HeadwaterLevel(4294967295); return &h }(),
+			input:   func() *types.HeadwaterLevel { h := types.HeadwaterLevel(types.CouldNotMeasure); return &h }(),
 			want:    "1////",
 			wantErr: false,
 		},
@@ -655,8 +682,11 @@ func TestAverageReservoirLevelEncoder(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "Special case AverageReservoirLevel - maximum value",
-			input:   func() *types.AverageReservoirLevel { a := types.AverageReservoirLevel(4294967295); return &a }(),
+			name: "Special case AverageReservoirLevel - maximum value",
+			input: func() *types.AverageReservoirLevel {
+				a := types.AverageReservoirLevel(types.CouldNotMeasure)
+				return &a
+			}(),
 			want:    "2////",
 			wantErr: false,
 		},
@@ -697,7 +727,7 @@ func TestDownstreamLevelEncoder(t *testing.T) {
 		},
 		{
 			name:    "Special case DownstreamLevel - maximum value",
-			input:   func() *types.DownstreamLevel { d := types.DownstreamLevel(4294967295); return &d }(),
+			input:   func() *types.DownstreamLevel { d := types.DownstreamLevel(types.CouldNotMeasure); return &d }(),
 			want:    "4////",
 			wantErr: false,
 		},
@@ -738,7 +768,7 @@ func TestReservoirVolumeEncoder(t *testing.T) {
 		},
 		{
 			name:    "Special case ReservoirVolume - maximum value",
-			input:   func() *types.ReservoirVolume { rv := types.ReservoirVolume(100001.0); return &rv }(),
+			input:   func() *types.ReservoirVolume { rv := types.ReservoirVolume(types.CouldNotMeasure); return &rv }(),
 			want:    "7////",
 			wantErr: false,
 		},
@@ -773,19 +803,19 @@ func TestReservoirVolumeEncoder(t *testing.T) {
 func TestIsReservoirWaterInflowEncoder(t *testing.T) {
 	tests := []struct {
 		name    string
-		input   *types.IsReservoirWaterInflow
+		input   *types.IsReservoirWaterInflowDate
 		want    string
 		wantErr bool
 	}{
 		{
 			name:    "Valid IsReservoirWaterInflow",
-			input:   &types.IsReservoirWaterInflow{Date: 15},
+			input:   func() *types.IsReservoirWaterInflowDate { date := types.IsReservoirWaterInflowDate(15); return &date }(),
 			want:    "95515",
 			wantErr: false,
 		},
 		{
 			name:    "Invalid IsReservoirWaterInflow - invalid day",
-			input:   &types.IsReservoirWaterInflow{Date: 32},
+			input:   func() *types.IsReservoirWaterInflowDate { date := types.IsReservoirWaterInflowDate(32); return &date }(),
 			want:    "",
 			wantErr: true,
 		},
@@ -826,7 +856,7 @@ func TestInflowEncoder(t *testing.T) {
 		},
 		{
 			name:    "Special case Inflow - maximum value",
-			input:   func() *types.Inflow { i := types.Inflow(4294967295); return &i }(),
+			input:   func() *types.Inflow { i := types.Inflow(types.CouldNotMeasure); return &i }(),
 			want:    "4////",
 			wantErr: false,
 		},
@@ -873,7 +903,7 @@ func TestResetEncoder(t *testing.T) {
 		},
 		{
 			name:    "Special case Reset - maximum value",
-			input:   func() *types.Reset { r := types.Reset(4294967295); return &r }(),
+			input:   func() *types.Reset { r := types.Reset(types.CouldNotMeasure); return &r }(),
 			want:    "7////",
 			wantErr: false,
 		},

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/IAmFutureHokage/HL-Coder/pkg/types"
+	types "github.com/IAmFutureHokage/HL-BufferService/pkg/types"
 )
 
 func PostCodeEncoder(p *types.PostCode) (string, error) {
@@ -31,7 +31,11 @@ func DateAndTimeEncoder(d *types.DateAndTime) (string, error) {
 		return "", fmt.Errorf("invalid hour value: %d", d.Time)
 	}
 
-	return fmt.Sprintf("%02d%02d1", d.Date, d.Time), nil
+	if d.EndBlockNum > 7 {
+		return "", fmt.Errorf("invalid endblock value: %d", d.EndBlockNum)
+	}
+
+	return fmt.Sprintf("%02d%02d%01d", d.Date, d.Time, d.EndBlockNum), nil
 }
 
 func IsDangerousEncoder(d *types.IsDangerous) (string, error) {
@@ -55,7 +59,7 @@ func WaterLevelOnTimeEncoder(w *types.WaterLevelOnTime) (string, error) {
 
 	waterlevel := int(*w)
 
-	if waterlevel == 32767 {
+	if waterlevel == types.CouldNotMeasure {
 		return "1////", nil
 	}
 
@@ -74,7 +78,7 @@ func DeltaWaterLevelEncoder(d *types.DeltaWaterLevel) (string, error) {
 
 	delta := int(*d)
 
-	if delta == 32767 {
+	if delta == types.CouldNotMeasure {
 		return "2////", nil
 	}
 
@@ -96,7 +100,7 @@ func WaterLevelOn20hEncoder(w *types.WaterLevelOn20h) (string, error) {
 
 	waterlevel := int(*w)
 
-	if waterlevel == 32767 {
+	if waterlevel == types.CouldNotMeasure {
 		return "3////", nil
 	}
 
@@ -115,12 +119,12 @@ func TemperatureEncoder(t *types.Temperature) (string, error) {
 
 	var waterTempStr, airTempStr = "//", "//"
 
-	if t.WaterTemperature != nil {
+	if *t.WaterTemperature != float64(types.CouldNotMeasure) {
 		waterTemp := int(*t.WaterTemperature * 10)
 		waterTempStr = fmt.Sprintf("%02d", waterTemp)
 	}
 
-	if t.AirTemperature != nil {
+	if *t.AirTemperature != types.CouldNotMeasure {
 		airTemp := int(*t.AirTemperature)
 		if airTemp < 0 {
 			airTemp = 50 - airTemp
@@ -131,13 +135,17 @@ func TemperatureEncoder(t *types.Temperature) (string, error) {
 	return fmt.Sprintf("4%s%s", waterTempStr, airTempStr), nil
 }
 
-func IcePhenomeniaEncoder(phenomenias []*types.Phenomenia) (string, error) {
+func IcePhenomeniaEncoder(state *types.IcePhenomeniaState, phenomenias []*types.Phenomenia) (string, error) {
 
-	if phenomenias[0] == nil {
+	if state == nil {
+		return "", nil
+	}
+
+	if *state == types.IcePhenomeniaState(0) && len(phenomenias) == 0 {
 		return "5////", nil
 	}
 
-	if phenomenias == nil {
+	if *state == 1 {
 		return "", nil
 	}
 
@@ -187,11 +195,11 @@ func IceInfoEncoder(iceInfo *types.IceInfo) (string, error) {
 
 	var iceHeightStr, snowHeightStr = "///", "/"
 
-	if iceInfo.Ice != nil {
+	if *iceInfo.Ice != types.CouldNotMeasure {
 		iceHeightStr = fmt.Sprintf("%03d", *iceInfo.Ice)
 	}
 
-	if iceInfo.Snow != nil {
+	if *iceInfo.Snow != types.SnowHeight(types.CouldNotMeasureByte) {
 		snowHeightStr = fmt.Sprintf("%d", *iceInfo.Snow)
 	}
 
@@ -206,7 +214,7 @@ func WaterflowEncoder(waterflow *types.Waterflow) (string, error) {
 
 	flow := float64(*waterflow)
 
-	if flow > 100000 {
+	if flow == float64(types.CouldNotMeasure) {
 		return "8////", nil
 	}
 
@@ -234,7 +242,7 @@ func PrecipitationEncoder(precip *types.Precipitation) (string, error) {
 
 	var valueStr, durationStr = "///", "/"
 
-	if precip.Value != nil {
+	if *precip.Value != float64(types.CouldNotMeasure) {
 		value := float64(*precip.Value)
 		if value < 1 {
 			value = (value * 10) + 990
@@ -242,24 +250,24 @@ func PrecipitationEncoder(precip *types.Precipitation) (string, error) {
 		valueStr = fmt.Sprintf("%03d", int(value))
 	}
 
-	if precip.Duration != nil {
+	if *precip.Duration != types.PrecipitationDuration(types.CouldNotMeasureByte) {
 		durationStr = fmt.Sprintf("%d", *precip.Duration)
 	}
 
 	return fmt.Sprintf("0%s%s", valueStr, durationStr), nil
 }
 
-func IsReservoirEncoder(reservoir *types.IsReservoir) (string, error) {
+func IsReservoirEncoder(reservoirDate *types.IsReservoirDate) (string, error) {
 
-	if reservoir == nil {
+	if reservoirDate == nil {
 		return "", nil
 	}
 
-	if reservoir.Date > 31 {
-		return "", fmt.Errorf("invalid day value: %d", reservoir.Date)
+	if *reservoirDate > 31 {
+		return "", fmt.Errorf("invalid day value: %d", reservoirDate)
 	}
 
-	return fmt.Sprintf("944%02d", reservoir.Date), nil
+	return fmt.Sprintf("944%02d", *reservoirDate), nil
 }
 
 func HeadwaterLevelEncoder(headwater *types.HeadwaterLevel) (string, error) {
@@ -270,7 +278,7 @@ func HeadwaterLevelEncoder(headwater *types.HeadwaterLevel) (string, error) {
 
 	headwaterLevel := int(*headwater)
 
-	if headwaterLevel == 4294967295 {
+	if headwaterLevel == types.CouldNotMeasure {
 		return "1////", nil
 	}
 
@@ -285,7 +293,7 @@ func AverageReservoirLevelEncoder(averageLevel *types.AverageReservoirLevel) (st
 
 	averageWaterLevel := int(*averageLevel)
 
-	if averageWaterLevel == 4294967295 {
+	if averageWaterLevel == types.CouldNotMeasure {
 		return "2////", nil
 	}
 
@@ -300,7 +308,7 @@ func DownstreamLevelEncoder(downstreamLevel *types.DownstreamLevel) (string, err
 
 	waterLevel := int(*downstreamLevel)
 
-	if waterLevel == 4294967295 {
+	if waterLevel == types.CouldNotMeasure {
 		return "4////", nil
 	}
 
@@ -316,7 +324,7 @@ func ReservoirVolumeEncoder(reservoirVolume *types.ReservoirVolume) (string, err
 	volume := float64(*reservoirVolume)
 	var factor int
 
-	if volume > 100000 {
+	if volume == float64(types.CouldNotMeasure) {
 		return "7////", nil
 	}
 
@@ -334,17 +342,17 @@ func ReservoirVolumeEncoder(reservoirVolume *types.ReservoirVolume) (string, err
 	return fmt.Sprintf("7%d%03d", factor, uint32(scaledVolume)), nil
 }
 
-func IsReservoirWaterInflowEncoder(inflow *types.IsReservoirWaterInflow) (string, error) {
+func IsReservoirWaterInflowEncoder(inflowDate *types.IsReservoirWaterInflowDate) (string, error) {
 
-	if inflow == nil {
+	if inflowDate == nil {
 		return "", nil
 	}
 
-	if inflow.Date > 31 {
-		return "", fmt.Errorf("invalid day value: %d", inflow.Date)
+	if *inflowDate > 31 {
+		return "", fmt.Errorf("invalid day value: %d", *inflowDate)
 	}
 
-	return fmt.Sprintf("955%02d", inflow.Date), nil
+	return fmt.Sprintf("955%02d", *inflowDate), nil
 }
 
 func InflowEncoder(inflow *types.Inflow) (string, error) {
@@ -356,7 +364,7 @@ func InflowEncoder(inflow *types.Inflow) (string, error) {
 	flow := float64(*inflow)
 	var factor int
 
-	if flow > 100000 {
+	if flow == float64(types.CouldNotMeasure) {
 		return "4////", nil
 	}
 
@@ -383,7 +391,7 @@ func ResetEncoder(reset *types.Reset) (string, error) {
 	value := float64(*reset)
 	var factor int
 
-	if value > 100000 {
+	if value == float64(types.CouldNotMeasure) {
 		return "7////", nil
 	}
 

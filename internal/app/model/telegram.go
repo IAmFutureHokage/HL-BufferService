@@ -3,11 +3,13 @@ package model
 import (
 	"database/sql"
 	"time"
+
+	uuid "github.com/google/uuid"
 )
 
 type Telegram struct {
-	Id                         string
-	GroupId                    string
+	Id                         uuid.UUID
+	GroupId                    uuid.UUID
 	TelegramCode               string
 	PostCode                   string
 	Date                       time.Time
@@ -19,7 +21,7 @@ type Telegram struct {
 	WaterLevelOn20h            sql.NullInt32
 	WaterTemperature           sql.NullFloat64
 	AirTemperature             sql.NullInt16
-	IcePhenomeniaState         byte
+	IcePhenomeniaState         sql.NullByte
 	IcePhenomenia              []*Phenomenia
 	Ice                        sql.NullInt16
 	Snow                       sql.NullByte
@@ -37,6 +39,8 @@ type Telegram struct {
 }
 
 type Phenomenia struct {
+	Id          uuid.UUID
+	TelegramId  uuid.UUID
 	Phenomen    byte
 	IsUntensity bool
 	Intensity   sql.NullByte

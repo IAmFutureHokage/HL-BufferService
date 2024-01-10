@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/IAmFutureHokage/HL-Coder/pkg/types"
+	types "github.com/IAmFutureHokage/HL-BufferService/pkg/types"
 )
 
 func FullEncoder(hltels []*types.Telegram) (string, error) {
@@ -117,8 +117,8 @@ func Encoder(hltel *types.Telegram) (string, error) {
 		builder.WriteString(temperature)
 	}
 
-	if len(hltel.IcePhenomenia) > 0 {
-		phenomenias, err := IcePhenomeniaEncoder(hltel.IcePhenomenia)
+	if hltel.IcePhenomenia != nil && hltel.IcePhenomeniaState != nil {
+		phenomenias, err := IcePhenomeniaEncoder(hltel.IcePhenomeniaState, hltel.IcePhenomenia)
 		if err != nil {
 			return "", err
 		}
@@ -169,8 +169,8 @@ func Encoder(hltel *types.Telegram) (string, error) {
 		builder.WriteString(precipitation)
 	}
 
-	if hltel.IsReservoir != nil {
-		isReservoir, err := IsReservoirEncoder(hltel.IsReservoir)
+	if hltel.IsReservoirDate != nil {
+		isReservoir, err := IsReservoirEncoder(hltel.IsReservoirDate)
 		if err != nil {
 			return "", err
 		}
@@ -219,8 +219,8 @@ func Encoder(hltel *types.Telegram) (string, error) {
 		}
 	}
 
-	if hltel.IsReservoirWaterInflow != nil {
-		state, err := IsReservoirWaterInflowEncoder(hltel.IsReservoirWaterInflow)
+	if hltel.IsReservoirWaterInflowDate != nil {
+		state, err := IsReservoirWaterInflowEncoder(hltel.IsReservoirWaterInflowDate)
 		if err != nil {
 			return "", err
 		}
