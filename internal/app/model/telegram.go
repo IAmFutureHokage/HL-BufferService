@@ -12,18 +12,17 @@ type Telegram struct {
 	GroupId                    uuid.UUID
 	TelegramCode               string
 	PostCode                   string
-	Date                       time.Time
-	Time                       byte
+	DateTime                   time.Time
 	EndBlockNum                byte
 	IsDangerous                bool
 	WaterLevelOnTime           sql.NullInt32
 	DeltaWaterLevel            sql.NullInt32
 	WaterLevelOn20h            sql.NullInt32
 	WaterTemperature           sql.NullFloat64
-	AirTemperature             sql.NullInt16
+	AirTemperature             sql.NullInt32
 	IcePhenomeniaState         sql.NullByte
-	IcePhenomenia              []*Phenomenia
-	Ice                        sql.NullInt16
+	IcePhenomenia              map[byte]*Phenomenia
+	Ice                        sql.NullInt32
 	Snow                       sql.NullByte
 	Waterflow                  sql.NullFloat64
 	PrecipitationValue         sql.NullFloat64
