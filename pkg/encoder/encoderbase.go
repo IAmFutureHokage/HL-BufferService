@@ -180,7 +180,7 @@ func IcePhenomeniaEncoder(state *types.IcePhenomeniaState, phenomenias []*types.
 
 func IcePhenomeniaStateEncoder(iceState *types.IcePhenomeniaState) (string, error) {
 
-	if *iceState == 2 {
+	if *iceState == 1 {
 		return "60000", nil
 	}
 

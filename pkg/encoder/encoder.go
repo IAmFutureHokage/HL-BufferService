@@ -117,7 +117,7 @@ func Encoder(hltel *types.Telegram) (string, error) {
 		builder.WriteString(temperature)
 	}
 
-	if hltel.IcePhenomenia != nil && hltel.IcePhenomeniaState != nil {
+	if len(hltel.IcePhenomenia) != 0 && hltel.IcePhenomeniaState != nil {
 		phenomenias, err := IcePhenomeniaEncoder(hltel.IcePhenomeniaState, hltel.IcePhenomenia)
 		if err != nil {
 			return "", err
