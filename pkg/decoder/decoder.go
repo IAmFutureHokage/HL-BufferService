@@ -1,6 +1,7 @@
 package decoder
 
 import (
+	"fmt"
 	"strings"
 
 	types "github.com/IAmFutureHokage/HL-BufferService/pkg/types"
@@ -18,7 +19,9 @@ func FullDecoder(s string) ([]*types.Telegram, error) {
 		}
 		decodedTelegrams = append(decodedTelegrams, decoded)
 	}
-
+	if len(decodedTelegrams) == 0 {
+		return nil, fmt.Errorf("Incorrect data")
+	}
 	return decodedTelegrams, nil
 }
 

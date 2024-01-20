@@ -21,7 +21,7 @@ type Telegram struct {
 	WaterTemperature           sql.NullFloat64
 	AirTemperature             sql.NullInt32
 	IcePhenomeniaState         sql.NullByte
-	IcePhenomenia              map[byte]*Phenomenia
+	IcePhenomenia              []*Phenomenia
 	Ice                        sql.NullInt32
 	Snow                       sql.NullByte
 	Waterflow                  sql.NullFloat64
