@@ -96,7 +96,7 @@ message AddTelegramRequest {
 }
 
 message AddTelegramResponse {
-    Telegram telegram = 1;
+    repeated Telegram telegram = 1;
     string telegram_code = 2;
 }
 
