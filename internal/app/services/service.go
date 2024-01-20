@@ -2,12 +2,12 @@ package services
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/IAmFutureHokage/HL-BufferService/internal/app/model"
 	pb "github.com/IAmFutureHokage/HL-BufferService/internal/proto"
 	"github.com/IAmFutureHokage/HL-BufferService/pkg/decoder"
 	"github.com/IAmFutureHokage/HL-BufferService/pkg/encoder"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/google/uuid"
 )
 
@@ -48,7 +48,7 @@ func (s *HydrologyBufferervice) AddTelegram(ctx context.Context, req *pb.AddTele
 			return nil, err
 		}
 
-		fmt.Printf("Telegram %d: %+v\n", i+1, telegrams[i])
+		spew.Dump(telegrams[i])
 	}
 
 	return &pb.AddTelegramResponse{}, nil

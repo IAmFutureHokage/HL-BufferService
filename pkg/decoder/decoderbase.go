@@ -230,8 +230,9 @@ func PhenomeniaDecoder(s string) (*types.IcePhenomeniaState, []*types.Phenomenia
 		return nil, nil, fmt.Errorf("first character must be '5'")
 	}
 
+	state := types.IcePhenomeniaState(0)
+
 	if s[1:] == "////" {
-		state := types.IcePhenomeniaState(0)
 		return &state, nil, nil
 	}
 
@@ -246,7 +247,7 @@ func PhenomeniaDecoder(s string) (*types.IcePhenomeniaState, []*types.Phenomenia
 	}
 
 	if firstPhenomenia == secondPhenomenia {
-		return nil,
+		return &state,
 			[]*types.Phenomenia{
 				{
 					Phenomen:    byte(firstPhenomenia),
@@ -258,7 +259,7 @@ func PhenomeniaDecoder(s string) (*types.IcePhenomeniaState, []*types.Phenomenia
 
 	if secondPhenomenia < 11 {
 		secondPhenomeniaByte := byte(secondPhenomenia)
-		return nil,
+		return &state,
 			[]*types.Phenomenia{
 				{
 					Phenomen:    byte(firstPhenomenia),
@@ -268,7 +269,7 @@ func PhenomeniaDecoder(s string) (*types.IcePhenomeniaState, []*types.Phenomenia
 			}, nil
 	}
 
-	return nil,
+	return &state,
 		[]*types.Phenomenia{
 			{
 				Phenomen:    byte(firstPhenomenia),
