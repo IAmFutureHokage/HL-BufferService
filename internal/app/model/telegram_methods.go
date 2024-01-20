@@ -113,25 +113,25 @@ func (r *Telegram) Update(draftTg *types.Telegram) error {
 		r.ReservoirDate = sql.NullTime{Valid: false}
 	}
 
-	if draftTg.Reservoir.HeadwaterLevel != nil {
+	if draftTg.Reservoir != nil && draftTg.Reservoir.HeadwaterLevel != nil {
 		r.HeadwaterLevel = sql.NullInt32{Int32: int32(*draftTg.Reservoir.HeadwaterLevel), Valid: true}
 	} else {
 		r.HeadwaterLevel = sql.NullInt32{Valid: false}
 	}
 
-	if draftTg.Reservoir.AverageReservoirLevel != nil {
+	if draftTg.Reservoir != nil && draftTg.Reservoir.AverageReservoirLevel != nil {
 		r.AverageReservoirLevel = sql.NullInt32{Int32: int32(*draftTg.Reservoir.AverageReservoirLevel), Valid: true}
 	} else {
 		r.AverageReservoirLevel = sql.NullInt32{Valid: false}
 	}
 
-	if draftTg.Reservoir.DownstreamLevel != nil {
+	if draftTg.Reservoir != nil && draftTg.Reservoir.DownstreamLevel != nil {
 		r.DownstreamLevel = sql.NullInt32{Int32: int32(*draftTg.Reservoir.DownstreamLevel), Valid: true}
 	} else {
 		r.DownstreamLevel = sql.NullInt32{Valid: false}
 	}
 
-	if draftTg.Reservoir.ReservoirVolume != nil {
+	if draftTg.Reservoir != nil && draftTg.Reservoir.ReservoirVolume != nil {
 		r.ReservoirVolume = sql.NullFloat64{Float64: float64(*draftTg.Reservoir.ReservoirVolume), Valid: true}
 	} else {
 		r.ReservoirVolume = sql.NullFloat64{Valid: false}
@@ -143,13 +143,13 @@ func (r *Telegram) Update(draftTg *types.Telegram) error {
 		r.IsReservoirWaterInflowDate = sql.NullTime{Valid: false}
 	}
 
-	if draftTg.ReservoirWaterInflow.Inflow != nil {
+	if draftTg.ReservoirWaterInflow != nil && draftTg.ReservoirWaterInflow.Inflow != nil {
 		r.Inflow = sql.NullFloat64{Float64: float64(*draftTg.ReservoirWaterInflow.Inflow), Valid: true}
 	} else {
 		r.Inflow = sql.NullFloat64{Valid: false}
 	}
 
-	if draftTg.ReservoirWaterInflow.Reset != nil {
+	if draftTg.ReservoirWaterInflow != nil && draftTg.ReservoirWaterInflow.Reset != nil {
 		r.Reset = sql.NullFloat64{Float64: float64(*draftTg.ReservoirWaterInflow.Reset), Valid: true}
 	} else {
 		r.Reset = sql.NullFloat64{Valid: false}

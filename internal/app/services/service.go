@@ -2,10 +2,13 @@ package services
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/IAmFutureHokage/HL-BufferService/internal/app/model"
 	pb "github.com/IAmFutureHokage/HL-BufferService/internal/proto"
 	"github.com/IAmFutureHokage/HL-BufferService/pkg/decoder"
+	"github.com/IAmFutureHokage/HL-BufferService/pkg/encoder"
+	"github.com/google/uuid"
 )
 
 type HydrologyBufferervice struct {
@@ -24,14 +27,28 @@ func (s *HydrologyBufferervice) AddTelegram(ctx context.Context, req *pb.AddTele
 	}
 
 	telegrams := make([]*model.Telegram, len(draftTelegrams))
+	groupId := uuid.New()
 
 	for i := 0; i < len(telegrams); i++ {
+
+		codeTg, err := encoder.Encoder(draftTelegrams[i])
+
 		telegrams[i] = &model.Telegram{}
-		err := telegrams[i].Update(draftTelegrams[i])
+		telegrams[i].Id = uuid.New()
+		telegrams[i].GroupId = groupId
+		telegrams[i].TelegramCode = codeTg
+
 		if err != nil {
 			return nil, err
 		}
 
+		err = telegrams[i].Update(draftTelegrams[i])
+
+		if err != nil {
+			return nil, err
+		}
+
+		fmt.Printf("Telegram %d: %+v\n", i+1, telegrams[i])
 	}
 
 	return &pb.AddTelegramResponse{}, nil
