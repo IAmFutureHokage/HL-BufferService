@@ -233,6 +233,7 @@ func splitSequence(s string) []string {
 
 	var sequences []string
 	firstBlock := blocks[0]
+	endBluckNum := blocks[1][4:]
 
 	currentSequence := []string{firstBlock}
 
@@ -241,7 +242,7 @@ func splitSequence(s string) []string {
 			if len(currentSequence) > 1 {
 				sequences = append(sequences, strings.Join(currentSequence, " "))
 			}
-			modifiedSecondBlock := block[3:5] + "081"
+			modifiedSecondBlock := block[3:5] + "08" + endBluckNum
 			currentSequence = []string{firstBlock, modifiedSecondBlock}
 		} else {
 			currentSequence = append(currentSequence, block)
