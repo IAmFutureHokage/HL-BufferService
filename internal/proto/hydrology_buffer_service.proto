@@ -19,31 +19,33 @@ service HydrologyBufferService {
 message Telegram {
     string id = 1;
     string group_id = 2;
-    google.protobuf.Timestamp datetime = 3;
+    string telegram_code = 3;
     string post_code = 4;
-    uint32 telegram_date = 5;
-    uint32 telegram_time = 6;
-    bool is_dangerous = 7;
-    int32 water_level_on_time = 8;
-    int32 delta_water_level = 9;
-    int32 water_level_on_20h = 10;
-    float water_temperature = 11;
-    int32 air_temperature = 12;
-    IcePhenomeniaState ice_phenomenia_state = 13;
-    repeated IcePhenomenia ice_phenomenias = 14;
-    uint32 ice_height = 15;
-    SnowHeight snow_height = 16;
-    float water_flow = 17;
-    float precipitation_value = 18;
-    PrecipitationDuration precipitation_duration = 19;
-    bool is_reservoir = 20;
-    uint32 reservoir_date = 21;
-    ReservoirData reservoir_data = 22;
-    bool is_reservoir_water_inflow = 23;
-    uint32 is_reservoir_water_inflow_date = 24;
-    ReservoirWaterInflowData reservoir_water_inflow_data = 25;
+    google.protobuf.Timestamp datetime = 5;
+    bool is_dangerous = 6;
+    int32 water_level_on_time = 7;
+    int32 delta_water_level = 8;
+    int32 water_level_on_20h = 9;
+    float water_temperature = 10;
+    int32 air_temperature = 11;
+    IcePhenomeniaState ice_phenomenia_state = 12;
+    repeated IcePhenomenia ice_phenomenias = 13;
+    int32 ice_height = 14;
+    SnowHeight snow_height = 15;
+    float water_flow = 16;
+    float precipitation_value = 17;
+    PrecipitationDuration precipitation_duration = 18;
+    google.protobuf.Timestamp reservoir_date = 19;
+    ReservoirData reservoir_data = 20;
+    google.protobuf.Timestamp reservoir_water_inflow_date = 21;
+    ReservoirWaterInflowData reservoir_water_inflow_data = 22;
 }
 
+message IcePhenomenia {
+    int32 phenomen = 1; // енам надо
+    bool is_intensity = 2;
+    int32 intensity = 3;
+}
 
 enum IcePhenomeniaState {
     NONE = 0;
@@ -73,16 +75,11 @@ enum PrecipitationDuration {
 	MORE_12 = 5;
 }
 
-message IcePhenomenia {
-    int32 phenomen = 1; // енам надо
-    bool is_intensity = 2;
-    int32 intensity = 3;
-}
 
 message ReservoirData {
-    uint32 headwater_level = 1;
-    uint32 average_reservoir_level = 2;
-    uint32 downstream_level = 3;
+    int32 headwater_level = 1;
+    int32 average_reservoir_level = 2;
+    int32 downstream_level = 3;
     float reservoir_volume = 4;
 }
 
@@ -96,8 +93,7 @@ message AddTelegramRequest {
 }
 
 message AddTelegramResponse {
-    repeated Telegram telegram = 1;
-    string telegram_code = 2;
+    repeated Telegram telegrams = 1;
 }
 
 message RemoveTelegramsRequest {
@@ -132,12 +128,12 @@ message GetTelegramResponse {
 }
 
 message GetTelegramsRequest {
-    uint32 page = 3; 
+    int32 page = 3; 
 }
 
 message GetTelegramsResponse {
-    uint32 page = 1;
-    uint32 max_page = 2;
+    int32 page = 1;
+    int32 max_page = 2;
     repeated Telegram telegrams = 3;
     repeated string telegram_codes = 4;
 }

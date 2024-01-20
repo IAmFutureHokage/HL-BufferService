@@ -37,9 +37,7 @@ require (
 
 require (
 	github.com/IAmFutureHokage/HL-Coder v0.0.0-20231203144942-15a4b87bdb31 // indirect
-	github.com/Masterminds/squirrel v1.5.4
-	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
-	github.com/doug-martin/goqu/v9 v9.19.0
+	github.com/davecgh/go-spew v1.1.1
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/jackc/pgx/v5 v5.5.2
