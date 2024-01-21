@@ -29,7 +29,7 @@ func (s *HydrologyBufferervice) AddTelegram(ctx context.Context, req *pb.AddTele
 		return nil, err
 	}
 
-	telegrams := make([]*model.Telegram, len(draftTelegrams))
+	telegrams := make([]model.Telegram, len(draftTelegrams))
 	respose := make([]*pb.Telegram, len(draftTelegrams))
 	groupId := uuid.New()
 
@@ -37,7 +37,7 @@ func (s *HydrologyBufferervice) AddTelegram(ctx context.Context, req *pb.AddTele
 
 		codeTg, err := encoder.Encoder(draftTelegrams[i])
 
-		telegrams[i] = &model.Telegram{}
+		telegrams[i] = model.Telegram{}
 		telegrams[i].Id = uuid.New()
 		telegrams[i].GroupId = groupId
 		telegrams[i].TelegramCode = codeTg
@@ -51,7 +51,11 @@ func (s *HydrologyBufferervice) AddTelegram(ctx context.Context, req *pb.AddTele
 			return nil, err
 		}
 
-		respose[i] = telegramToProto(telegrams[i])
+		respose[i] = telegramToProto(&telegrams[i])
+	}
+
+	if err := s.repository.AddTelegram(ctx, telegrams); err != nil {
+		return nil, err
 	}
 
 	return &pb.AddTelegramResponse{
@@ -67,7 +71,6 @@ func (s *HydrologyBufferervice) UpdateTelegramByCodeRequest(ctx context.Context,
 	}
 
 	telegramCode, err := encoder.Encoder(draftTelegram)
-
 	if err != nil {
 		return nil, err
 	}
@@ -77,14 +80,15 @@ func (s *HydrologyBufferervice) UpdateTelegramByCodeRequest(ctx context.Context,
 		return nil, err
 	}
 
-	telegram := &model.Telegram{
-		Id:           telegramId,
-		TelegramCode: telegramCode,
+	telegram, err := s.repository.GetTelegramByID(ctx, telegramId)
+	if err != nil {
+		return nil, err
 	}
 
 	telegram.Update(draftTelegram)
+	telegram.TelegramCode = telegramCode
 
-	response := telegramToProto(telegram)
+	response := telegramToProto(&telegram)
 
 	return &pb.UpdateTelegramResponse{
 		Telegram: response,

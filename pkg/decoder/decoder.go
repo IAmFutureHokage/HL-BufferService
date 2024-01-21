@@ -27,7 +27,10 @@ func FullDecoder(s string) ([]*types.Telegram, error) {
 
 func Decoder(s string) (*types.Telegram, error) {
 
-	codeBlocks := parseString(s)
+	codeBlocks, err := parseString(s)
+	if err != nil {
+		return nil, err
+	}
 	telegram := &types.Telegram{}
 
 	var isReservoir, isResevoirInflow = false, false
@@ -210,17 +213,19 @@ func Decoder(s string) (*types.Telegram, error) {
 	return telegram, nil
 }
 
-func parseString(input string) []string {
+func parseString(input string) ([]string, error) {
+
+	input = strings.Split(input, "=")[0]
 
 	substrings := strings.Fields(input)
 
-	var result []string
 	for _, s := range substrings {
-		s = strings.TrimSuffix(s, "=")
-		result = append(result, s)
+		if len(s) != 5 {
+			return nil, fmt.Errorf("неверный формат: подстрока '%s' должна иметь 5 символов", s)
+		}
 	}
 
-	return result
+	return substrings, nil
 }
 
 func splitSequence(s string) []string {
