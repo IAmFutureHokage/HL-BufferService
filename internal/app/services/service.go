@@ -63,7 +63,27 @@ func (s *HydrologyBufferervice) AddTelegram(ctx context.Context, req *pb.AddTele
 	}, nil
 }
 
-func (s *HydrologyBufferervice) UpdateTelegramByCodeRequest(ctx context.Context, req *pb.UpdateTelegramByCodeRequest) (*pb.UpdateTelegramResponse, error) {
+func (s *HydrologyBufferervice) RemoveTelegrams(ctx context.Context, req *pb.RemoveTelegramsRequest) (*pb.RemoveTelegramsResponse, error) {
+
+	uuids := make([]uuid.UUID, len(req.Id))
+
+	for i := 0; i < len(uuids); i++ {
+		id, err := uuid.Parse(req.Id[i])
+		if err != nil {
+			return nil, err
+		}
+		uuids[i] = id
+	}
+
+	err := s.repository.RemoveTelegrams(ctx, uuids)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.RemoveTelegramsResponse{Success: true}, nil
+}
+
+func (s *HydrologyBufferervice) UpdateTelegramByCode(ctx context.Context, req *pb.UpdateTelegramByCodeRequest) (*pb.UpdateTelegramResponse, error) {
 
 	draftTelegram, err := decoder.Decoder(req.TelegramCode)
 	if err != nil {
@@ -87,6 +107,11 @@ func (s *HydrologyBufferervice) UpdateTelegramByCodeRequest(ctx context.Context,
 
 	telegram.Update(draftTelegram)
 	telegram.TelegramCode = telegramCode
+
+	err = s.repository.UpdateTelegram(ctx, telegram)
+	if err != nil {
+		return nil, err
+	}
 
 	response := telegramToProto(&telegram)
 
