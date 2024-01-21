@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/IAmFutureHokage/HL-BufferService/internal/app/model"
@@ -100,6 +101,7 @@ func (r *HydrologyBufferRepository) AddTelegram(ctx context.Context, data []mode
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -167,14 +169,17 @@ func (r *HydrologyBufferRepository) RemoveTelegrams(ctx context.Context, ids []u
 		}
 	}()
 
-	_, err = tx.Exec(ctx, "DELETE FROM phenomenia WHERE telegramId = ANY($1)", ids)
+	result, err := tx.Exec(ctx, "DELETE FROM phenomenia WHERE telegramId = ANY($1)", ids)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(ctx, "DELETE FROM telegram WHERE id = ANY($1)", ids)
+	result, err = tx.Exec(ctx, "DELETE FROM telegram WHERE id = ANY($1)", ids)
 	if err != nil {
 		return err
+	}
+	if rowsAffected := result.RowsAffected(); rowsAffected == 0 {
+		return errors.New("no matching rows in telegram")
 	}
 
 	return nil
@@ -182,7 +187,7 @@ func (r *HydrologyBufferRepository) RemoveTelegrams(ctx context.Context, ids []u
 
 func (r *HydrologyBufferRepository) GetAll(ctx context.Context) ([]model.Telegram, error) {
 
-	var rowCount int
+	//var rowCount int
 	selectBuilder := goqu.From("telegram")
 
 	sql, args, err := selectBuilder.ToSQL()
@@ -195,21 +200,21 @@ func (r *HydrologyBufferRepository) GetAll(ctx context.Context) ([]model.Telegra
 		return nil, err
 	}
 
-	for rows.Next() {
-		rowCount++
-	}
+	// for rows.Next() {
+	// 	rowCount++
+	// }
+
+	// defer rows.Close()
+
+	// rows, err = r.dbPool.Query(ctx, sql, args...)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	defer rows.Close()
 
-	rows, err = r.dbPool.Query(ctx, sql, args...)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	telegrams := make([]model.Telegram, rowCount)
-
+	//telegrams := make([]model.Telegram, rowCount)
+	var telegrams []model.Telegram
 	for rows.Next() {
 		var telegram model.Telegram
 		err := rows.Scan(
@@ -275,29 +280,29 @@ func (r *HydrologyBufferRepository) UpdateTelegram(ctx context.Context, updatedT
 
 	telegramUpdate := goqu.Update("telegram").
 		Set(goqu.Record{
-			"groupId":                    updatedTelegram.GroupId,
-			"telegramCode":               updatedTelegram.TelegramCode,
-			"postCode":                   updatedTelegram.PostCode,
-			"dateTime":                   updatedTelegram.DateTime,
-			"endBlockNum":                updatedTelegram.EndBlockNum,
-			"isDangerous":                updatedTelegram.IsDangerous,
-			"waterLevelOnTime":           updatedTelegram.WaterLevelOnTime,
-			"deltaWaterLevel":            updatedTelegram.DeltaWaterLevel,
-			"waterLevelOn20h":            updatedTelegram.WaterLevelOn20h,
-			"waterTemperature":           updatedTelegram.WaterTemperature,
-			"airTemperature":             updatedTelegram.AirTemperature,
-			"icePhenomeniaState":         updatedTelegram.IcePhenomeniaState,
+			"groupid":                    updatedTelegram.GroupId,
+			"telegramcode":               updatedTelegram.TelegramCode,
+			"postcode":                   updatedTelegram.PostCode,
+			"datetime":                   updatedTelegram.DateTime,
+			"endblocknum":                updatedTelegram.EndBlockNum,
+			"isdangerous":                updatedTelegram.IsDangerous,
+			"waterlevelontime":           updatedTelegram.WaterLevelOnTime,
+			"deltawaterlevel":            updatedTelegram.DeltaWaterLevel,
+			"waterlevelon20h":            updatedTelegram.WaterLevelOn20h,
+			"watertemperature":           updatedTelegram.WaterTemperature,
+			"airtemperature":             updatedTelegram.AirTemperature,
+			"icephenomeniastate":         updatedTelegram.IcePhenomeniaState,
 			"ice":                        updatedTelegram.Ice,
 			"snow":                       updatedTelegram.Snow,
 			"waterflow":                  updatedTelegram.Waterflow,
-			"precipitationValue":         updatedTelegram.PrecipitationValue,
-			"precipitationDuration":      updatedTelegram.PrecipitationDuration,
-			"reservoirDate":              updatedTelegram.ReservoirDate,
-			"headwaterLevel":             updatedTelegram.HeadwaterLevel,
-			"averageReservoirLevel":      updatedTelegram.AverageReservoirLevel,
-			"downstreamLevel":            updatedTelegram.DownstreamLevel,
-			"reservoirVolume":            updatedTelegram.ReservoirVolume,
-			"isReservoirWaterInflowDate": updatedTelegram.IsReservoirWaterInflowDate,
+			"precipitationvalue":         updatedTelegram.PrecipitationValue,
+			"precipitationduration":      updatedTelegram.PrecipitationDuration,
+			"reservoirdate":              updatedTelegram.ReservoirDate,
+			"headwaterlevel":             updatedTelegram.HeadwaterLevel,
+			"averagereservoirlevel":      updatedTelegram.AverageReservoirLevel,
+			"downstreamlevel":            updatedTelegram.DownstreamLevel,
+			"reservoirvolume":            updatedTelegram.ReservoirVolume,
+			"isreservoirwaterinflowdate": updatedTelegram.IsReservoirWaterInflowDate,
 			"inflow":                     updatedTelegram.Inflow,
 			"reset":                      updatedTelegram.Reset,
 		}).
@@ -317,9 +322,9 @@ func (r *HydrologyBufferRepository) UpdateTelegram(ctx context.Context, updatedT
 		phenomeniaInsert := goqu.Insert("phenomenia").Rows(
 			goqu.Record{
 				"id":          phenomen.Id,
-				"telegramId":  updatedTelegram.Id,
+				"telegramid":  updatedTelegram.Id,
 				"phenomen":    phenomen.Phenomen,
-				"isUntensity": phenomen.IsUntensity,
+				"isuntensity": phenomen.IsUntensity,
 				"intensity":   phenomen.Intensity,
 			},
 		)
@@ -334,5 +339,6 @@ func (r *HydrologyBufferRepository) UpdateTelegram(ctx context.Context, updatedT
 			return err
 		}
 	}
+
 	return nil
 }
