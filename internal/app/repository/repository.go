@@ -146,40 +146,6 @@ func (r *HydrologyBufferRepository) GetTelegramByID(ctx context.Context, id uuid
 		return model.Telegram{}, err
 	}
 
-	selectPhenomeniaBuilder := goqu.From("phenomenia").Where(goqu.Ex{"telegramId": id})
-	sql, args, err = selectPhenomeniaBuilder.ToSQL()
-	if err != nil {
-		return model.Telegram{}, err
-	}
-
-	rows, err := r.dbPool.Query(ctx, sql, args...)
-	if err != nil {
-		return model.Telegram{}, err
-	}
-	defer rows.Close()
-
-	var phenomeniaSlice []model.Phenomenia
-	var phenomeniaCount int
-
-	for rows.Next() {
-		var phenomen model.Phenomenia
-		err := rows.Scan(
-			&phenomen.Id, &phenomen.TelegramId, &phenomen.Phenomen, &phenomen.IsUntensity, &phenomen.Intensity,
-		)
-		if err != nil {
-			return model.Telegram{}, err
-		}
-		phenomeniaSlice = append(phenomeniaSlice, phenomen)
-		phenomeniaCount++
-	}
-
-	phenomeniaArray := make([]*model.Phenomenia, phenomeniaCount)
-	for i, p := range phenomeniaSlice {
-		phenomeniaArray[i] = &p
-	}
-
-	telegram.IcePhenomenia = phenomeniaArray
-
 	return telegram, nil
 }
 
