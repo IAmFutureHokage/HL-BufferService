@@ -63,7 +63,27 @@ func (s *HydrologyBufferervice) AddTelegram(ctx context.Context, req *pb.AddTele
 	}, nil
 }
 
-func (s *HydrologyBufferervice) UpdateTelegramByCodeRequest(ctx context.Context, req *pb.UpdateTelegramByCodeRequest) (*pb.UpdateTelegramResponse, error) {
+func (s *HydrologyBufferervice) RemoveTelegrams(ctx context.Context, req *pb.RemoveTelegramsRequest) (*pb.RemoveTelegramsResponse, error) {
+
+	uuids := make([]uuid.UUID, len(req.Id))
+
+	for i := 0; i < len(uuids); i++ {
+		id, err := uuid.Parse(req.Id[i])
+		if err != nil {
+			return nil, err
+		}
+		uuids[i] = id
+	}
+
+	err := s.repository.RemoveTelegrams(ctx, uuids)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.RemoveTelegramsResponse{Success: true}, nil
+}
+
+func (s *HydrologyBufferervice) UpdateTelegramByCode(ctx context.Context, req *pb.UpdateTelegramByCodeRequest) (*pb.UpdateTelegramResponse, error) {
 
 	draftTelegram, err := decoder.Decoder(req.TelegramCode)
 	if err != nil {
@@ -88,10 +108,53 @@ func (s *HydrologyBufferervice) UpdateTelegramByCodeRequest(ctx context.Context,
 	telegram.Update(draftTelegram)
 	telegram.TelegramCode = telegramCode
 
+	err = s.repository.UpdateTelegram(ctx, telegram)
+	if err != nil {
+		return nil, err
+	}
+
 	response := telegramToProto(&telegram)
 
 	return &pb.UpdateTelegramResponse{
 		Telegram: response,
+	}, nil
+}
+
+func (s *HydrologyBufferervice) GetTelegram(ctx context.Context, req *pb.GetTelegramRequest) (*pb.GetTelegramResponse, error) {
+
+	telegramId, err := uuid.Parse(req.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	telegram, err := s.repository.GetTelegramByID(ctx, telegramId)
+	if err != nil {
+		return nil, err
+	}
+
+	response := telegramToProto(&telegram)
+
+	return &pb.GetTelegramResponse{
+		Telegram: response,
+	}, nil
+}
+
+func (s *HydrologyBufferervice) GetTelegrams(ctx context.Context, req *pb.GetTelegramsRequest) (*pb.GetTelegramsResponse, error) {
+
+	telegrams, err := s.repository.GetAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	response := make([]*pb.Telegram, len(telegrams))
+
+	for i := 0; i < len(response); i++ {
+		telegram := *telegramToProto(&telegrams[i])
+		response[i] = &telegram
+	}
+
+	return &pb.GetTelegramsResponse{
+		Telegrams: response,
 	}, nil
 }
 
