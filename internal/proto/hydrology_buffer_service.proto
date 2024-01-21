@@ -27,23 +27,23 @@ message Telegram {
     google.protobuf.Int32Value water_level_on_time = 7;
     google.protobuf.Int32Value delta_water_level = 8;
     google.protobuf.Int32Value water_level_on20h = 9;
-    google.protobuf.FloatValue water_temperature = 10;
+    google.protobuf.DoubleValue water_temperature = 10;
     google.protobuf.Int32Value air_temperature = 11;
     google.protobuf.Int32Value ice_phenomenia_state = 12;
     repeated IcePhenomenia ice_phenomenias = 13;
     google.protobuf.Int32Value ice_height = 14;
     google.protobuf.Int32Value snow_height = 15;
-    google.protobuf.FloatValue water_flow = 16;
-    google.protobuf.FloatValue precipitation_value = 17;
+    google.protobuf.DoubleValue water_flow = 16;
+    google.protobuf.DoubleValue precipitation_value = 17;
     google.protobuf.Int32Value precipitation_duration = 18;
     google.protobuf.Timestamp reservoir_date = 19;
     google.protobuf.Int32Value headwater_level = 20;
     google.protobuf.Int32Value average_reservoir_level = 21;
     google.protobuf.Int32Value downstream_level = 22;
-    google.protobuf.FloatValue reservoir_volume = 23;
+    google.protobuf.DoubleValue reservoir_volume = 23;
     google.protobuf.Timestamp reservoir_water_inflow_date = 24;
-    google.protobuf.FloatValue inflow = 25;
-    google.protobuf.FloatValue reset = 26;
+    google.protobuf.DoubleValue inflow = 25;
+    google.protobuf.DoubleValue reset = 26;
 }
 
 message IcePhenomenia {
