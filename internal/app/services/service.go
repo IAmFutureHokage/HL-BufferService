@@ -120,6 +120,44 @@ func (s *HydrologyBufferervice) UpdateTelegramByCode(ctx context.Context, req *p
 	}, nil
 }
 
+func (s *HydrologyBufferervice) GetTelegram(ctx context.Context, req *pb.GetTelegramRequest) (*pb.GetTelegramResponse, error) {
+
+	telegramId, err := uuid.Parse(req.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	telegram, err := s.repository.GetTelegramByID(ctx, telegramId)
+	if err != nil {
+		return nil, err
+	}
+
+	response := telegramToProto(&telegram)
+
+	return &pb.GetTelegramResponse{
+		Telegram: response,
+	}, nil
+}
+
+func (s *HydrologyBufferervice) GetTelegrams(ctx context.Context, req *pb.GetTelegramsRequest) (*pb.GetTelegramsResponse, error) {
+
+	telegrams, err := s.repository.GetAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	response := make([]*pb.Telegram, len(telegrams))
+
+	for i := 0; i < len(response); i++ {
+		telegram := *telegramToProto(&telegrams[i])
+		response[i] = &telegram
+	}
+
+	return &pb.GetTelegramsResponse{
+		Telegrams: response,
+	}, nil
+}
+
 func telegramToProto(req *model.Telegram) (res *pb.Telegram) {
 	res = &pb.Telegram{}
 
