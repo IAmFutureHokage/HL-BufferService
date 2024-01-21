@@ -27,12 +27,12 @@ func (r *HydrologyBufferRepository) AddTelegram(ctx context.Context, data []mode
 	defer func() {
 		if err != nil {
 			tx.Rollback(ctx)
-			fmt.Errorf("rollback err")
+			fmt.Println("rollback error:", err)
 			return
 		}
 		err = tx.Commit(ctx)
 		if err != nil {
-			fmt.Errorf("commit error")
+			fmt.Println("commit error:", err)
 		}
 	}()
 
@@ -158,12 +158,12 @@ func (r *HydrologyBufferRepository) RemoveTelegrams(ctx context.Context, ids []u
 	defer func() {
 		if err != nil {
 			tx.Rollback(ctx)
-			fmt.Errorf("rollback error")
+			fmt.Println("rollback error:", err)
 			return
 		}
 		err = tx.Commit(ctx)
 		if err != nil {
-			fmt.Errorf("commit error")
+			fmt.Println("commit error:", err)
 		}
 	}()
 
@@ -247,4 +247,92 @@ func (r *HydrologyBufferRepository) GetAll(ctx context.Context) ([]model.Telegra
 	}
 
 	return telegrams, nil
+}
+
+func (r *HydrologyBufferRepository) UpdateTelegram(ctx context.Context, updatedTelegram model.Telegram) error {
+
+	tx, err := r.dbPool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+			fmt.Println("rollback error:", err)
+			return
+		}
+		err = tx.Commit(ctx)
+		if err != nil {
+			fmt.Println("commit error:", err)
+		}
+	}()
+
+	_, err = tx.Exec(ctx, "DELETE FROM phenomenia WHERE telegramId = $1", updatedTelegram.Id)
+	if err != nil {
+		return err
+	}
+
+	telegramUpdate := goqu.Update("telegram").
+		Set(goqu.Record{
+			"groupId":                    updatedTelegram.GroupId,
+			"telegramCode":               updatedTelegram.TelegramCode,
+			"postCode":                   updatedTelegram.PostCode,
+			"dateTime":                   updatedTelegram.DateTime,
+			"endBlockNum":                updatedTelegram.EndBlockNum,
+			"isDangerous":                updatedTelegram.IsDangerous,
+			"waterLevelOnTime":           updatedTelegram.WaterLevelOnTime,
+			"deltaWaterLevel":            updatedTelegram.DeltaWaterLevel,
+			"waterLevelOn20h":            updatedTelegram.WaterLevelOn20h,
+			"waterTemperature":           updatedTelegram.WaterTemperature,
+			"airTemperature":             updatedTelegram.AirTemperature,
+			"icePhenomeniaState":         updatedTelegram.IcePhenomeniaState,
+			"ice":                        updatedTelegram.Ice,
+			"snow":                       updatedTelegram.Snow,
+			"waterflow":                  updatedTelegram.Waterflow,
+			"precipitationValue":         updatedTelegram.PrecipitationValue,
+			"precipitationDuration":      updatedTelegram.PrecipitationDuration,
+			"reservoirDate":              updatedTelegram.ReservoirDate,
+			"headwaterLevel":             updatedTelegram.HeadwaterLevel,
+			"averageReservoirLevel":      updatedTelegram.AverageReservoirLevel,
+			"downstreamLevel":            updatedTelegram.DownstreamLevel,
+			"reservoirVolume":            updatedTelegram.ReservoirVolume,
+			"isReservoirWaterInflowDate": updatedTelegram.IsReservoirWaterInflowDate,
+			"inflow":                     updatedTelegram.Inflow,
+			"reset":                      updatedTelegram.Reset,
+		}).
+		Where(goqu.Ex{"id": updatedTelegram.Id})
+
+	sql, args, err := telegramUpdate.ToSQL()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(ctx, sql, args...)
+	if err != nil {
+		return err
+	}
+
+	for _, phenomen := range updatedTelegram.IcePhenomenia {
+		phenomeniaInsert := goqu.Insert("phenomenia").Rows(
+			goqu.Record{
+				"id":          phenomen.Id,
+				"telegramId":  updatedTelegram.Id,
+				"phenomen":    phenomen.Phenomen,
+				"isUntensity": phenomen.IsUntensity,
+				"intensity":   phenomen.Intensity,
+			},
+		)
+
+		sql, args, err := phenomeniaInsert.ToSQL()
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.Exec(ctx, sql, args...)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

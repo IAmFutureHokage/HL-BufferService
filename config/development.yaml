@@ -5,7 +5,6 @@ database:
   host: localhost
   port: 5432
   user: postgres
-  password: Primlab2020
-  dbname: lolkek
+  password: postgres
+  dbname: postgres
   poolsize: 20
-
