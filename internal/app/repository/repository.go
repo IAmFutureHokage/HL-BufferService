@@ -27,7 +27,7 @@ func (r *HydrologyBufferRepository) AddTelegram(ctx context.Context, data []mode
 	defer func() {
 		if err != nil {
 			tx.Rollback(ctx)
-			fmt.Errorf("rollback erorr")
+			fmt.Errorf("rollback err")
 			return
 		}
 		err = tx.Commit(ctx)
@@ -149,7 +149,7 @@ func (r *HydrologyBufferRepository) GetTelegramByID(ctx context.Context, id uuid
 	return telegram, nil
 }
 
-func (r *HydrologyBufferRepository) RemoveTelegram(ctx context.Context, id uuid.UUID) error {
+func (r *HydrologyBufferRepository) RemoveTelegrams(ctx context.Context, ids []uuid.UUID) error {
 
 	tx, err := r.dbPool.Begin(ctx)
 	if err != nil {
@@ -167,12 +167,12 @@ func (r *HydrologyBufferRepository) RemoveTelegram(ctx context.Context, id uuid.
 		}
 	}()
 
-	_, err = tx.Exec(ctx, "DELETE FROM phenomenia WHERE telegramId = $1", id)
+	_, err = tx.Exec(ctx, "DELETE FROM phenomenia WHERE telegramId = ANY($1)", ids)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(ctx, "DELETE FROM telegram WHERE id = $1", id)
+	_, err = tx.Exec(ctx, "DELETE FROM telegram WHERE id = ANY($1)", ids)
 	if err != nil {
 		return err
 	}
@@ -182,6 +182,7 @@ func (r *HydrologyBufferRepository) RemoveTelegram(ctx context.Context, id uuid.
 
 func (r *HydrologyBufferRepository) GetAll(ctx context.Context) ([]model.Telegram, error) {
 
+	var rowCount int
 	selectBuilder := goqu.From("telegram")
 
 	sql, args, err := selectBuilder.ToSQL()
@@ -193,9 +194,21 @@ func (r *HydrologyBufferRepository) GetAll(ctx context.Context) ([]model.Telegra
 	if err != nil {
 		return nil, err
 	}
+
+	for rows.Next() {
+		rowCount++
+	}
+
 	defer rows.Close()
 
-	var telegrams []model.Telegram
+	rows, err = r.dbPool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	telegrams := make([]model.Telegram, rowCount)
 
 	for rows.Next() {
 		var telegram model.Telegram
@@ -230,7 +243,6 @@ func (r *HydrologyBufferRepository) GetAll(ctx context.Context) ([]model.Telegra
 		if err != nil {
 			return nil, err
 		}
-
 		telegrams = append(telegrams, telegram)
 	}
 
