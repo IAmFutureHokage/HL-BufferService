@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/IAmFutureHokage/HL-BufferService/internal/app/migration"
+	//"github.com/IAmFutureHokage/HL-BufferService/internal/app/repository"
 	"github.com/IAmFutureHokage/HL-BufferService/internal/app/services"
 	pb "github.com/IAmFutureHokage/HL-BufferService/internal/proto"
 	"github.com/IAmFutureHokage/HL-BufferService/pkg/database"
@@ -66,6 +67,7 @@ func main() {
 		log.Fatalf("Failed to execute migration: %v", err)
 	}
 
+	//hydrologyBufferRepository := repository.NewHydrologyBufferRepository(dbPool)
 	hydrologyBufferService := services.NewHydrologyBufferService()
 
 	s := grpc.NewServer()
