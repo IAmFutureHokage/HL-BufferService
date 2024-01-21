@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/IAmFutureHokage/HL-BufferService/internal/app/migration"
-	//"github.com/IAmFutureHokage/HL-BufferService/internal/app/repository"
+	"github.com/IAmFutureHokage/HL-BufferService/internal/app/repository"
 	"github.com/IAmFutureHokage/HL-BufferService/internal/app/services"
 	pb "github.com/IAmFutureHokage/HL-BufferService/internal/proto"
 	"github.com/IAmFutureHokage/HL-BufferService/pkg/database"
@@ -46,7 +46,7 @@ func main() {
 
 	fmt.Println("gRPC server running ...")
 
-	port := 50052
+	port := viper.GetInt("server.port")
 	if port == 0 {
 		log.Fatal("Server port is not set in the config file")
 	}
@@ -67,8 +67,8 @@ func main() {
 		log.Fatalf("Failed to execute migration: %v", err)
 	}
 
-	//hydrologyBufferRepository := repository.NewHydrologyBufferRepository(dbPool)
-	hydrologyBufferService := services.NewHydrologyBufferService()
+	hydrologyBufferRepository := repository.NewHydrologyBufferRepository(dbPool)
+	hydrologyBufferService := services.NewHydrologyBufferService(hydrologyBufferRepository)
 
 	s := grpc.NewServer()
 	pb.RegisterHydrologyBufferServiceServer(s, hydrologyBufferService)

@@ -107,7 +107,6 @@ message UpdateTelegramByCodeRequest {
 
 message UpdateTelegramResponse {
     Telegram telegram = 1;
-    string telegram_code = 2;
 }
 
 message GetTelegramRequest {
@@ -116,18 +115,13 @@ message GetTelegramRequest {
 
 message GetTelegramResponse {
     Telegram Telegram = 1;
-    string telegram_code = 2;
 }
 
 message GetTelegramsRequest {
-    int32 page = 3; 
 }
 
 message GetTelegramsResponse {
-    int32 page = 1;
-    int32 max_page = 2;
-    repeated Telegram telegrams = 3;
-    repeated string telegram_codes = 4;
+    repeated Telegram telegrams = 1;
 }
 
 message TransferToSystemRequest {

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/IAmFutureHokage/HL-BufferService/internal/app/model"
+	"github.com/IAmFutureHokage/HL-BufferService/internal/app/repository"
 	pb "github.com/IAmFutureHokage/HL-BufferService/internal/proto"
 	"github.com/IAmFutureHokage/HL-BufferService/pkg/decoder"
 	"github.com/IAmFutureHokage/HL-BufferService/pkg/encoder"
@@ -14,10 +15,11 @@ import (
 
 type HydrologyBufferervice struct {
 	pb.UnimplementedHydrologyBufferServiceServer
+	repository *repository.HydrologyBufferRepository
 }
 
-func NewHydrologyBufferService() *HydrologyBufferervice {
-	return &HydrologyBufferervice{}
+func NewHydrologyBufferService(repo *repository.HydrologyBufferRepository) *HydrologyBufferervice {
+	return &HydrologyBufferervice{repository: repo}
 }
 
 func (s *HydrologyBufferervice) AddTelegram(ctx context.Context, req *pb.AddTelegramRequest) (*pb.AddTelegramResponse, error) {
@@ -54,6 +56,38 @@ func (s *HydrologyBufferervice) AddTelegram(ctx context.Context, req *pb.AddTele
 
 	return &pb.AddTelegramResponse{
 		Telegrams: respose,
+	}, nil
+}
+
+func (s *HydrologyBufferervice) UpdateTelegramByCodeRequest(ctx context.Context, req *pb.UpdateTelegramByCodeRequest) (*pb.UpdateTelegramResponse, error) {
+
+	draftTelegram, err := decoder.Decoder(req.TelegramCode)
+	if err != nil {
+		return nil, err
+	}
+
+	telegramCode, err := encoder.Encoder(draftTelegram)
+
+	if err != nil {
+		return nil, err
+	}
+
+	telegramId, err := uuid.Parse(req.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	telegram := &model.Telegram{
+		Id:           telegramId,
+		TelegramCode: telegramCode,
+	}
+
+	telegram.Update(draftTelegram)
+
+	response := telegramToProto(telegram)
+
+	return &pb.UpdateTelegramResponse{
+		Telegram: response,
 	}, nil
 }
 
