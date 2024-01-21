@@ -8,6 +8,7 @@ import (
 	pb "github.com/IAmFutureHokage/HL-BufferService/internal/proto"
 	"github.com/IAmFutureHokage/HL-BufferService/pkg/decoder"
 	"github.com/IAmFutureHokage/HL-BufferService/pkg/encoder"
+	"github.com/IAmFutureHokage/HL-BufferService/pkg/types"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -81,6 +82,42 @@ func (s *HydrologyBufferervice) RemoveTelegrams(ctx context.Context, req *pb.Rem
 	}
 
 	return &pb.RemoveTelegramsResponse{Success: true}, nil
+}
+
+func (s *HydrologyBufferervice) UpdateTelegramByInfo(ctx context.Context, req *pb.UpdateTelegramByInfoRequest) (*pb.UpdateTelegramResponse, error) {
+
+	telegramId, err := uuid.Parse(req.Telegram.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	telegram, err := s.repository.GetTelegramByID(ctx, telegramId)
+	if err != nil {
+		return nil, err
+	}
+
+	draftTelegram := protoToDraft(req.Telegram)
+
+	draftTelegram.DateAndTime.EndBlockNum = telegram.EndBlockNum
+
+	telegramCode, err := encoder.Encoder(draftTelegram)
+	if err != nil {
+		return nil, err
+	}
+
+	telegram.Update(draftTelegram)
+	telegram.TelegramCode = telegramCode
+
+	err = s.repository.UpdateTelegram(ctx, telegram)
+	if err != nil {
+		return nil, err
+	}
+
+	response := telegramToProto(&telegram)
+
+	return &pb.UpdateTelegramResponse{
+		Telegram: response,
+	}, nil
 }
 
 func (s *HydrologyBufferervice) UpdateTelegramByCode(ctx context.Context, req *pb.UpdateTelegramByCodeRequest) (*pb.UpdateTelegramResponse, error) {
@@ -265,6 +302,143 @@ func telegramToProto(req *model.Telegram) (res *pb.Telegram) {
 				res.IcePhenomenias[i].Intensity = &wrapperspb.Int32Value{
 					Value: int32(req.IcePhenomenia[i].Intensity.Byte),
 				}
+			}
+		}
+	}
+
+	return
+}
+
+func protoToDraft(req *pb.Telegram) (res *types.Telegram) {
+	res = &types.Telegram{}
+
+	res.PostCode = types.PostCode(req.PostCode)
+
+	res.DateAndTime.Date = byte(req.Datetime.AsTime().Day())
+	res.DateAndTime.Time = byte(req.Datetime.AsTime().Hour())
+	res.DateAndTime.EndBlockNum = 1
+
+	res.IsDangerous = types.IsDangerous(req.IsDangerous)
+
+	if req.WaterLevelOnTime != nil {
+		buffer := types.WaterLevelOnTime(req.WaterLevelOnTime.Value)
+		res.WaterLevelOnTime = &buffer
+	}
+
+	if req.DeltaWaterLevel != nil {
+		buffer := types.DeltaWaterLevel(req.DeltaWaterLevel.Value)
+		res.DeltaWaterLevel = &buffer
+	}
+
+	if req.WaterLevelOn20H != nil {
+		buffer := types.WaterLevelOn20h(req.WaterLevelOn20H.Value)
+		res.WaterLevelOn20h = &buffer
+	}
+
+	if req.WaterTemperature != nil || req.AirTemperature != nil {
+		res.Temperature = &types.Temperature{}
+	}
+
+	if req.WaterTemperature != nil {
+		buffer := req.WaterTemperature.Value
+		res.Temperature.WaterTemperature = &buffer
+	}
+
+	if req.AirTemperature != nil {
+		buffer := req.AirTemperature.Value
+		res.Temperature.AirTemperature = &buffer
+	}
+
+	if req.IcePhenomeniaState != nil {
+		buffer := types.IcePhenomeniaState(req.IcePhenomeniaState.Value)
+		res.IcePhenomeniaState = &buffer
+	}
+
+	if req.IceHeight != nil || req.SnowHeight != nil {
+		res.IceInfo = &types.IceInfo{}
+	}
+
+	if req.IceHeight != nil {
+		buffer := req.IceHeight.Value
+		res.IceInfo.Ice = &buffer
+	}
+
+	if req.SnowHeight != nil {
+		buffer := types.SnowHeight(req.SnowHeight.Value)
+		res.IceInfo.Snow = &buffer
+	}
+
+	if req.WaterFlow != nil {
+		buffer := types.Waterflow(req.WaterFlow.Value)
+		res.Waterflow = &buffer
+	}
+
+	if req.PrecipitationValue != nil || req.PrecipitationDuration != nil {
+		res.Precipitation = &types.Precipitation{}
+	}
+
+	if req.PrecipitationValue != nil {
+		buffer := req.PrecipitationValue.Value
+		res.Precipitation.Value = &buffer
+	}
+
+	if req.PrecipitationDuration != nil {
+		buffer := types.PrecipitationDuration(req.PrecipitationDuration.Value)
+		res.Precipitation.Duration = &buffer
+	}
+
+	if req.ReservoirDate != nil {
+		buffer := types.IsReservoirDate(req.ReservoirDate.AsTime().Day())
+		res.IsReservoirDate = &buffer
+		res.Reservoir = &types.Reservoir{}
+
+		if req.HeadwaterLevel != nil {
+			buffer := types.HeadwaterLevel(req.HeadwaterLevel.Value)
+			res.Reservoir.HeadwaterLevel = &buffer
+		}
+
+		if req.AverageReservoirLevel != nil {
+			buffer := types.AverageReservoirLevel(req.AverageReservoirLevel.Value)
+			res.Reservoir.AverageReservoirLevel = &buffer
+		}
+
+		if req.DownstreamLevel != nil {
+			buffer := types.DownstreamLevel(req.DownstreamLevel.Value)
+			res.Reservoir.DownstreamLevel = &buffer
+		}
+
+		if req.ReservoirVolume != nil {
+			buffer := types.ReservoirVolume(req.ReservoirVolume.Value)
+			res.Reservoir.ReservoirVolume = &buffer
+		}
+	}
+
+	if req.ReservoirWaterInflowDate != nil {
+		buffer := types.IsReservoirWaterInflowDate(req.ReservoirWaterInflowDate.AsTime().Day())
+		res.IsReservoirWaterInflowDate = &buffer
+		res.ReservoirWaterInflow = &types.ReservoirWaterInflow{}
+
+		if req.Inflow != nil {
+			buffer := types.Inflow(req.Inflow.Value)
+			res.ReservoirWaterInflow.Inflow = &buffer
+		}
+
+		if req.Reset_ != nil {
+			buffer := types.Reset(req.Reset_.Value)
+			res.ReservoirWaterInflow.Reset = &buffer
+		}
+	}
+
+	if len(req.IcePhenomenias) != 0 {
+		res.IcePhenomenia = make([]*types.Phenomenia, len(req.IcePhenomenias))
+
+		for i := 0; i < len(res.IcePhenomenia); i++ {
+			res.IcePhenomenia[i] = &types.Phenomenia{Phenomen: byte(req.IcePhenomenias[i].Phenomen)}
+
+			if req.IcePhenomenias[i].Intensity != nil {
+				res.IcePhenomenia[i].IsUntensity = true
+				buffer := byte(req.IcePhenomenias[i].Intensity.Value)
+				res.IcePhenomenia[i].Intensity = &buffer
 			}
 		}
 	}
