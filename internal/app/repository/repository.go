@@ -107,7 +107,10 @@ func (r *HydrologyBufferRepository) AddTelegram(ctx context.Context, data []mode
 
 func (r *HydrologyBufferRepository) GetTelegramByID(ctx context.Context, id uuid.UUID) (model.Telegram, error) {
 
-	selectTelegramBuilder := goqu.From("telegram").Where(goqu.Ex{"id": id}).Limit(1)
+	selectTelegramBuilder := goqu.From("telegram").
+		Where(goqu.Ex{"id": id}).
+		Limit(1)
+
 	sql, args, err := selectTelegramBuilder.ToSQL()
 	if err != nil {
 		return model.Telegram{}, err
@@ -148,6 +151,35 @@ func (r *HydrologyBufferRepository) GetTelegramByID(ctx context.Context, id uuid
 		return model.Telegram{}, err
 	}
 
+	selectPhenomeniaBuilder := goqu.From("phenomenia").
+		Where(goqu.Ex{"telegramid": id})
+
+	sql, args, err = selectPhenomeniaBuilder.ToSQL()
+	if err != nil {
+		return model.Telegram{}, err
+	}
+
+	rows, err := r.dbPool.Query(ctx, sql, args...)
+	if err != nil {
+		return model.Telegram{}, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var phenomenia model.Phenomenia
+		err := rows.Scan(
+			&phenomenia.Id,
+			&phenomenia.TelegramId,
+			&phenomenia.Phenomen,
+			&phenomenia.IsUntensity,
+			&phenomenia.Intensity,
+		)
+		if err != nil {
+			return model.Telegram{}, err
+		}
+		telegram.IcePhenomenia = append(telegram.IcePhenomenia, &phenomenia)
+	}
+
 	return telegram, nil
 }
 
@@ -186,8 +218,6 @@ func (r *HydrologyBufferRepository) RemoveTelegrams(ctx context.Context, ids []u
 }
 
 func (r *HydrologyBufferRepository) GetAll(ctx context.Context) ([]model.Telegram, error) {
-
-	//var rowCount int
 	selectBuilder := goqu.From("telegram")
 
 	sql, args, err := selectBuilder.ToSQL()
@@ -199,21 +229,8 @@ func (r *HydrologyBufferRepository) GetAll(ctx context.Context) ([]model.Telegra
 	if err != nil {
 		return nil, err
 	}
-
-	// for rows.Next() {
-	// 	rowCount++
-	// }
-
-	// defer rows.Close()
-
-	// rows, err = r.dbPool.Query(ctx, sql, args...)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	defer rows.Close()
 
-	//telegrams := make([]model.Telegram, rowCount)
 	var telegrams []model.Telegram
 	for rows.Next() {
 		var telegram model.Telegram
@@ -249,6 +266,10 @@ func (r *HydrologyBufferRepository) GetAll(ctx context.Context) ([]model.Telegra
 			return nil, err
 		}
 		telegrams = append(telegrams, telegram)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return telegrams, nil
