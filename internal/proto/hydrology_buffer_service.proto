@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
 
 package hydrologybuffer;
 
@@ -23,34 +24,37 @@ message Telegram {
     string post_code = 4;
     google.protobuf.Timestamp datetime = 5;
     bool is_dangerous = 6;
-    int32 water_level_on_time = 7;
-    int32 delta_water_level = 8;
-    int32 water_level_on_20h = 9;
-    float water_temperature = 10;
-    int32 air_temperature = 11;
-    IcePhenomeniaState ice_phenomenia_state = 12;
+    google.protobuf.Int32Value water_level_on_time = 7;
+    google.protobuf.Int32Value delta_water_level = 8;
+    google.protobuf.Int32Value water_level_on20h = 9;
+    google.protobuf.FloatValue water_temperature = 10;
+    google.protobuf.Int32Value air_temperature = 11;
+    google.protobuf.Int32Value ice_phenomenia_state = 12;
     repeated IcePhenomenia ice_phenomenias = 13;
-    int32 ice_height = 14;
-    SnowHeight snow_height = 15;
-    float water_flow = 16;
-    float precipitation_value = 17;
-    PrecipitationDuration precipitation_duration = 18;
+    google.protobuf.Int32Value ice_height = 14;
+    google.protobuf.Int32Value snow_height = 15;
+    google.protobuf.FloatValue water_flow = 16;
+    google.protobuf.FloatValue precipitation_value = 17;
+    google.protobuf.Int32Value precipitation_duration = 18;
     google.protobuf.Timestamp reservoir_date = 19;
-    ReservoirData reservoir_data = 20;
-    google.protobuf.Timestamp reservoir_water_inflow_date = 21;
-    ReservoirWaterInflowData reservoir_water_inflow_data = 22;
+    google.protobuf.Int32Value headwater_level = 20;
+    google.protobuf.Int32Value average_reservoir_level = 21;
+    google.protobuf.Int32Value downstream_level = 22;
+    google.protobuf.FloatValue reservoir_volume = 23;
+    google.protobuf.Timestamp reservoir_water_inflow_date = 24;
+    google.protobuf.FloatValue inflow = 25;
+    google.protobuf.FloatValue reset = 26;
 }
 
 message IcePhenomenia {
     int32 phenomen = 1; // енам надо
-    bool is_intensity = 2;
-    int32 intensity = 3;
+    google.protobuf.Int32Value intensity = 3;
 }
 
 enum IcePhenomeniaState {
-    NONE = 0;
-    TRUE = 1;
-    END = 2;
+    TRUE = 0;
+    END = 1;
+    NULL_STATE = 3;
 }
 
 enum SnowHeight {
@@ -75,18 +79,6 @@ enum PrecipitationDuration {
 	MORE_12 = 5;
 }
 
-
-message ReservoirData {
-    int32 headwater_level = 1;
-    int32 average_reservoir_level = 2;
-    int32 downstream_level = 3;
-    float reservoir_volume = 4;
-}
-
-message ReservoirWaterInflowData {
-    float inflow = 1;
-    float reset = 2;
-}
 
 message AddTelegramRequest {
     string code = 1;

@@ -27,7 +27,7 @@ func (s *HydrologyBufferervice) AddTelegram(ctx context.Context, req *pb.AddTele
 	}
 
 	telegrams := make([]*model.Telegram, len(draftTelegrams))
-	response := make([]*pb.Telegram, len(draftTelegrams))
+	respose := make([]*pb.Telegram, len(draftTelegrams))
 	groupId := uuid.New()
 
 	for i := 0; i < len(telegrams); i++ {
@@ -48,117 +48,89 @@ func (s *HydrologyBufferervice) AddTelegram(ctx context.Context, req *pb.AddTele
 			return nil, err
 		}
 
-		pbTelegram := convertToProto(telegrams[i])
-
-		response[i] = pbTelegram
+		respose[i] = telegramToProto(telegrams[i])
 	}
 
 	return &pb.AddTelegramResponse{
-		Telegrams: response,
+		Telegrams: respose,
 	}, nil
 }
 
-func convertToProto(tg *model.Telegram) *pb.Telegram {
-	pbTelegram := &pb.Telegram{
-		Id:           tg.Id.String(),
-		GroupId:      tg.GroupId.String(),
-		TelegramCode: tg.TelegramCode,
-		PostCode:     tg.PostCode,
-		IsDangerous:  tg.IsDangerous,
+func telegramToProto(req *model.Telegram) (res *pb.Telegram) {
+	res = &pb.Telegram{}
+
+	res.Id = req.Id.String()
+	res.GroupId = req.GroupId.String()
+	res.TelegramCode = req.TelegramCode
+	res.PostCode = req.PostCode
+	res.Datetime = timestamppb.New(req.DateTime)
+	res.IsDangerous = req.IsDangerous
+
+	if req.WaterLevelOnTime.Valid {
+		res.WaterLevelOnTime.Value = req.WaterLevelOnTime.Int32
+	}
+	if req.DeltaWaterLevel.Valid {
+		res.DeltaWaterLevel.Value = req.DeltaWaterLevel.Int32
+	}
+	if req.WaterLevelOn20h.Valid {
+		res.WaterLevelOn20H.Value = req.WaterLevelOn20h.Int32
+	}
+	if req.WaterTemperature.Valid {
+		res.WaterTemperature.Value = float32(req.WaterTemperature.Float64)
+	}
+	if req.AirTemperature.Valid {
+		res.AirTemperature.Value = req.AirTemperature.Int32
+	}
+	if req.IcePhenomeniaState.Valid {
+		res.IcePhenomeniaState.Value = int32(req.IcePhenomeniaState.Byte)
+	}
+	if req.Ice.Valid {
+		res.IceHeight.Value = req.Ice.Int32
+	}
+	if req.Snow.Valid {
+		res.SnowHeight.Value = int32(req.Snow.Byte)
+	}
+	if req.Waterflow.Valid {
+		res.WaterFlow.Value = float32(req.Waterflow.Float64)
+	}
+	if req.PrecipitationValue.Valid {
+		res.PrecipitationValue.Value = float32(req.PrecipitationValue.Float64)
+	}
+	if req.PrecipitationDuration.Valid {
+		res.PrecipitationDuration.Value = int32(req.PrecipitationDuration.Byte)
+	}
+	if req.ReservoirDate.Valid {
+		res.ReservoirDate = timestamppb.New(req.ReservoirDate.Time)
+	}
+	if req.HeadwaterLevel.Valid {
+		res.HeadwaterLevel.Value = req.HeadwaterLevel.Int32
+	}
+	if req.AverageReservoirLevel.Valid {
+		res.AverageReservoirLevel.Value = req.AverageReservoirLevel.Int32
+	}
+	if req.DownstreamLevel.Valid {
+		res.DownstreamLevel.Value = req.DownstreamLevel.Int32
+	}
+	if req.ReservoirVolume.Valid {
+		res.ReservoirVolume.Value = float32(req.ReservoirVolume.Float64)
+	}
+	if req.IsReservoirWaterInflowDate.Valid {
+		res.ReservoirWaterInflowDate = timestamppb.New(req.IsReservoirWaterInflowDate.Time)
+	}
+	if req.Reset.Valid {
+		res.Reset_.Value = float32(req.Reset.Float64)
 	}
 
-	if !tg.DateTime.IsZero() {
-		pbTelegram.Datetime = timestamppb.New(tg.DateTime)
-	}
+	if len(req.IcePhenomenia) != 0 {
+		res.IcePhenomenias = make([]*pb.IcePhenomenia, len(req.IcePhenomenia))
 
-	if tg.WaterLevelOnTime.Valid {
-		pbTelegram.WaterLevelOnTime = int32(tg.WaterLevelOnTime.Int32)
-	}
-
-	if tg.DeltaWaterLevel.Valid {
-		pbTelegram.DeltaWaterLevel = int32(tg.DeltaWaterLevel.Int32)
-	}
-
-	if tg.WaterLevelOn20h.Valid {
-		pbTelegram.WaterLevelOn_20H = int32(tg.WaterLevelOn20h.Int32)
-	}
-
-	if tg.WaterTemperature.Valid {
-		pbTelegram.WaterTemperature = float32(tg.WaterTemperature.Float64)
-	}
-
-	if tg.AirTemperature.Valid {
-		pbTelegram.AirTemperature = int32(tg.AirTemperature.Int32)
-	}
-
-	if tg.IcePhenomeniaState.Valid {
-		pbTelegram.IcePhenomeniaState = pb.IcePhenomeniaState(tg.IcePhenomeniaState.Byte)
-	}
-
-	if tg.Ice.Valid {
-		pbTelegram.IceHeight = int32(tg.Ice.Int32)
-	}
-
-	if tg.Snow.Valid {
-		pbTelegram.SnowHeight = pb.SnowHeight(tg.Snow.Byte)
-	}
-
-	if tg.Waterflow.Valid {
-		pbTelegram.WaterFlow = float32(tg.WaterTemperature.Float64)
-	}
-
-	if tg.PrecipitationValue.Valid {
-		pbTelegram.PrecipitationValue = float32(tg.PrecipitationValue.Float64)
-	}
-
-	if tg.PrecipitationDuration.Valid {
-		pbTelegram.PrecipitationDuration = pb.PrecipitationDuration(tg.PrecipitationDuration.Byte)
-	}
-
-	if !tg.ReservoirDate.Time.IsZero() {
-		pbTelegram.ReservoirDate = timestamppb.New(tg.ReservoirDate.Time)
-
-	}
-
-	if tg.IsReservoirWaterInflowDate.Valid && !tg.IsReservoirWaterInflowDate.Time.IsZero() {
-		pbTelegram.ReservoirWaterInflowDate = timestamppb.New(tg.IsReservoirWaterInflowDate.Time)
-	}
-
-	if tg.HeadwaterLevel.Valid {
-		pbTelegram.ReservoirData.HeadwaterLevel = int32(tg.HeadwaterLevel.Int32)
-	}
-
-	if tg.AverageReservoirLevel.Valid {
-		pbTelegram.ReservoirData.AverageReservoirLevel = int32(tg.AverageReservoirLevel.Int32)
-	}
-
-	if tg.DownstreamLevel.Valid {
-		pbTelegram.ReservoirData.DownstreamLevel = int32(tg.DownstreamLevel.Int32)
-	}
-
-	if tg.ReservoirVolume.Valid {
-		pbTelegram.ReservoirData.ReservoirVolume = float32(tg.ReservoirVolume.Float64)
-	}
-
-	if tg.Inflow.Valid {
-		pbTelegram.ReservoirWaterInflowData.Inflow = float32(tg.Inflow.Float64)
-	}
-
-	if tg.Reset.Valid {
-		pbTelegram.ReservoirWaterInflowData.Reset_ = float32(tg.Reset.Float64)
-	}
-
-	for _, p := range tg.IcePhenomenia {
-		pbPhenomenia := &pb.IcePhenomenia{
-			Phenomen: int32(p.Phenomen),
+		for i := 0; i < len(res.IcePhenomenias); i++ {
+			res.IcePhenomenias[i] = &pb.IcePhenomenia{Phenomen: int32(req.IcePhenomenia[i].Phenomen)}
+			if req.IcePhenomenia[i].IsUntensity && req.IcePhenomenia[i].Intensity.Valid {
+				res.IcePhenomenias[i].Intensity.Value = int32(req.IcePhenomenia[i].Intensity.Byte)
+			}
 		}
-
-		if p.Intensity.Valid {
-			pbPhenomenia.Intensity = int32(p.Intensity.Byte)
-		}
-
-		pbTelegram.IcePhenomenias = append(pbTelegram.IcePhenomenias, pbPhenomenia)
 	}
 
-	return pbTelegram
+	return
 }
