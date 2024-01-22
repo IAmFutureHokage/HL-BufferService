@@ -6,6 +6,7 @@ import (
 )
 
 type WaterLevel struct {
+	PostCode   string
 	Date       time.Time
 	WaterLevel int32
 }

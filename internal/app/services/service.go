@@ -218,6 +218,7 @@ func (s *HydrologyBufferervice) TransferToSystem(ctx context.Context, req *pb.Tr
 			waterlevel := model.WaterLevel{
 				Date:       telegrams[i].DateTime,
 				WaterLevel: telegrams[i].WaterLevelOnTime.Int32,
+				PostCode:   telegrams[i].PostCode,
 			}
 			waterlevels = append(waterlevels, &waterlevel)
 		}
@@ -233,6 +234,7 @@ func (s *HydrologyBufferervice) TransferToSystem(ctx context.Context, req *pb.Tr
 			waterlevel := model.WaterLevel{
 				Date:       settime,
 				WaterLevel: telegrams[i].WaterLevelOn20h.Int32,
+				PostCode:   telegrams[i].PostCode,
 			}
 			waterlevels = append(waterlevels, &waterlevel)
 		}
