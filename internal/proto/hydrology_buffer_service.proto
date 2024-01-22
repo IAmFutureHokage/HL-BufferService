@@ -48,7 +48,7 @@ message Telegram {
 
 message IcePhenomenia {
     int32 phenomen = 1; // енам надо
-    google.protobuf.Int32Value intensity = 3;
+    google.protobuf.Int32Value intensity = 2;
 }
 
 enum IcePhenomeniaState {
@@ -125,7 +125,6 @@ message GetTelegramsResponse {
 }
 
 message TransferToSystemRequest {
-    repeated string ids = 1;
 }
 
 message TransferToSystemResponse {

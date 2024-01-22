@@ -2,13 +2,16 @@ package services
 
 import (
 	"context"
+	"log"
 
 	"github.com/IAmFutureHokage/HL-BufferService/internal/app/model"
 	"github.com/IAmFutureHokage/HL-BufferService/internal/app/repository"
 	pb "github.com/IAmFutureHokage/HL-BufferService/internal/proto"
 	"github.com/IAmFutureHokage/HL-BufferService/pkg/decoder"
 	"github.com/IAmFutureHokage/HL-BufferService/pkg/encoder"
+	"github.com/IAmFutureHokage/HL-BufferService/pkg/kafka"
 	"github.com/IAmFutureHokage/HL-BufferService/pkg/types"
+	"github.com/Shopify/sarama"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -16,11 +19,16 @@ import (
 
 type HydrologyBufferervice struct {
 	pb.UnimplementedHydrologyBufferServiceServer
-	repository *repository.HydrologyBufferRepository
+	repository    *repository.HydrologyBufferRepository
+	KafkaProducer sarama.SyncProducer
+	KafkaConfig   kafka.KafkaConfig
 }
 
-func NewHydrologyBufferService(repo *repository.HydrologyBufferRepository) *HydrologyBufferervice {
-	return &HydrologyBufferervice{repository: repo}
+func NewHydrologyBufferService(repo *repository.HydrologyBufferRepository, kafkaProducer sarama.SyncProducer) *HydrologyBufferervice {
+	return &HydrologyBufferervice{
+		repository:    repo,
+		KafkaProducer: kafkaProducer,
+	}
 }
 
 func (s *HydrologyBufferervice) AddTelegram(ctx context.Context, req *pb.AddTelegramRequest) (*pb.AddTelegramResponse, error) {
@@ -195,6 +203,21 @@ func (s *HydrologyBufferervice) GetTelegrams(ctx context.Context, req *pb.GetTel
 	}, nil
 }
 
+func (s *HydrologyBufferervice) TransferToSystem(ctx context.Context, req *pb.TransferToSystemRequest) (*pb.TransferToSystemResponse, error) {
+	message := "Тест-хуест"
+	topic := s.KafkaConfig.Topic
+
+	err := kafka.SendMessageToKafka(s.KafkaProducer, topic, message)
+	if err != nil {
+		log.Printf("Failed to send message to Kafka: %v", err)
+		return nil, err
+	}
+
+	return &pb.TransferToSystemResponse{
+		Success: true,
+	}, nil
+}
+
 func telegramToProto(req *model.Telegram) (res *pb.Telegram) {
 	res = &pb.Telegram{}
 
@@ -285,6 +308,11 @@ func telegramToProto(req *model.Telegram) (res *pb.Telegram) {
 	}
 	if req.IsReservoirWaterInflowDate.Valid {
 		res.ReservoirWaterInflowDate = timestamppb.New(req.IsReservoirWaterInflowDate.Time)
+	}
+	if req.Inflow.Valid {
+		res.Inflow = &wrapperspb.DoubleValue{
+			Value: req.Inflow.Float64,
+		}
 	}
 	if req.Reset.Valid {
 		res.Reset_ = &wrapperspb.DoubleValue{
@@ -444,4 +472,8 @@ func protoToDraft(req *pb.Telegram) (res *types.Telegram) {
 	}
 
 	return
+}
+
+func (s *HydrologyBufferervice) SetKafkaConfig(config kafka.KafkaConfig) {
+	s.KafkaConfig = config
 }
