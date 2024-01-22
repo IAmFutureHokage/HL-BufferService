@@ -218,6 +218,7 @@ func (r *HydrologyBufferRepository) RemoveTelegrams(ctx context.Context, ids []u
 }
 
 func (r *HydrologyBufferRepository) GetAll(ctx context.Context) ([]model.Telegram, error) {
+
 	selectBuilder := goqu.From("telegram")
 
 	sql, args, err := selectBuilder.ToSQL()
@@ -265,6 +266,41 @@ func (r *HydrologyBufferRepository) GetAll(ctx context.Context) ([]model.Telegra
 		if err != nil {
 			return nil, err
 		}
+
+		phenomeniaBuilder := goqu.From("phenomenia").
+			Where(goqu.Ex{"telegramid": telegram.Id})
+
+		phenomeniaSQL, phenomeniaArgs, err := phenomeniaBuilder.ToSQL()
+		if err != nil {
+			return nil, err
+		}
+
+		phenomeniaRows, err := r.dbPool.Query(ctx, phenomeniaSQL, phenomeniaArgs...)
+		if err != nil {
+			return nil, err
+		}
+		defer phenomeniaRows.Close()
+
+		for phenomeniaRows.Next() {
+			var phenomenia model.Phenomenia
+			err := phenomeniaRows.Scan(
+				&phenomenia.Id,
+				&phenomenia.TelegramId,
+				&phenomenia.Phenomen,
+				&phenomenia.IsUntensity,
+				&phenomenia.Intensity,
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			telegram.IcePhenomenia = append(telegram.IcePhenomenia, &phenomenia)
+		}
+
+		if err := phenomeniaRows.Err(); err != nil {
+			return nil, err
+		}
+
 		telegrams = append(telegrams, telegram)
 	}
 
@@ -362,4 +398,30 @@ func (r *HydrologyBufferRepository) UpdateTelegram(ctx context.Context, updatedT
 	}
 
 	return nil
+}
+
+func (r *HydrologyBufferRepository) RemoveAll(ctx context.Context) error {
+
+	deleteTelegramBuilder := goqu.Delete("telegram")
+
+	sqlTelegram, argsTelegram, err := deleteTelegramBuilder.ToSQL()
+	if err != nil {
+		return err
+	}
+
+	_, err = r.dbPool.Exec(ctx, sqlTelegram, argsTelegram...)
+	if err != nil {
+		return err
+	}
+
+	deletePhenomeniaBuilder := goqu.Delete("phenomenia")
+
+	sqlPhenomenia, argsPhenomenia, err := deletePhenomeniaBuilder.ToSQL()
+	if err != nil {
+		return err
+	}
+
+	_, err = r.dbPool.Exec(ctx, sqlPhenomenia, argsPhenomenia...)
+
+	return err
 }
