@@ -12,6 +12,10 @@ type KafkaConfig struct {
 	Topic      string   `mapstructure:"topic"`
 }
 
+type MessageProducer interface {
+	Serialize() ([]byte, error)
+}
+
 func NewKafkaProducer(config KafkaConfig) (sarama.SyncProducer, error) {
 	producerConfig := sarama.NewConfig()
 	producerConfig.Producer.RequiredAcks = sarama.WaitForLocal       // Принимать подтверждение после записи в локальный лог
@@ -26,13 +30,18 @@ func NewKafkaProducer(config KafkaConfig) (sarama.SyncProducer, error) {
 	return producer, nil
 }
 
-func SendMessageToKafka(producer sarama.SyncProducer, topic string, message string) error {
-	msg := &sarama.ProducerMessage{
-		Topic: topic,
-		Value: sarama.StringEncoder(message),
+func SendMessageToKafka(producer sarama.SyncProducer, topic string, messageProducer MessageProducer) error {
+	messageBytes, err := messageProducer.Serialize()
+	if err != nil {
+		return fmt.Errorf("failed to serialize message: %v", err)
 	}
 
-	_, _, err := producer.SendMessage(msg)
+	msg := &sarama.ProducerMessage{
+		Topic: topic,
+		Value: sarama.StringEncoder(messageBytes),
+	}
+
+	_, _, err = producer.SendMessage(msg)
 	if err != nil {
 		return fmt.Errorf("failed to send message to Kafka: %v", err)
 	}

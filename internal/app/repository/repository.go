@@ -402,6 +402,18 @@ func (r *HydrologyBufferRepository) UpdateTelegram(ctx context.Context, updatedT
 
 func (r *HydrologyBufferRepository) RemoveAll(ctx context.Context) error {
 
+	deletePhenomeniaBuilder := goqu.Delete("phenomenia")
+
+	sqlPhenomenia, argsPhenomenia, err := deletePhenomeniaBuilder.ToSQL()
+	if err != nil {
+		return err
+	}
+
+	_, err = r.dbPool.Exec(ctx, sqlPhenomenia, argsPhenomenia...)
+	if err != nil {
+		return err
+	}
+
 	deleteTelegramBuilder := goqu.Delete("telegram")
 
 	sqlTelegram, argsTelegram, err := deleteTelegramBuilder.ToSQL()
@@ -413,15 +425,6 @@ func (r *HydrologyBufferRepository) RemoveAll(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
-	deletePhenomeniaBuilder := goqu.Delete("phenomenia")
-
-	sqlPhenomenia, argsPhenomenia, err := deletePhenomeniaBuilder.ToSQL()
-	if err != nil {
-		return err
-	}
-
-	_, err = r.dbPool.Exec(ctx, sqlPhenomenia, argsPhenomenia...)
 
 	return err
 }

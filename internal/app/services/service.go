@@ -2,7 +2,7 @@ package services
 
 import (
 	"context"
-	"log"
+	"time"
 
 	"github.com/IAmFutureHokage/HL-BufferService/internal/app/model"
 	"github.com/IAmFutureHokage/HL-BufferService/internal/app/repository"
@@ -204,12 +204,52 @@ func (s *HydrologyBufferervice) GetTelegrams(ctx context.Context, req *pb.GetTel
 }
 
 func (s *HydrologyBufferervice) TransferToSystem(ctx context.Context, req *pb.TransferToSystemRequest) (*pb.TransferToSystemResponse, error) {
-	message := "Тест-хуест"
+
+	telegrams, err := s.repository.GetAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	waterlevels := make([]*model.WaterLevel, 0, len(telegrams)*2)
+
+	for i := 0; i < len(telegrams); i++ {
+
+		if telegrams[i].WaterLevelOnTime.Valid && telegrams[i].WaterLevelOnTime.Int32 != types.CouldNotMeasure {
+			waterlevel := model.WaterLevel{
+				Date:       telegrams[i].DateTime,
+				WaterLevel: telegrams[i].WaterLevelOnTime.Int32,
+			}
+			waterlevels = append(waterlevels, &waterlevel)
+		}
+
+		if telegrams[i].WaterLevelOn20h.Valid && telegrams[i].WaterLevelOn20h.Int32 != types.CouldNotMeasure {
+			settime := time.Date(
+				telegrams[i].DateTime.Year(),
+				telegrams[i].DateTime.Month(),
+				telegrams[i].DateTime.Day(),
+				20, 0, 0, 0,
+				telegrams[i].DateTime.Location(),
+			)
+			waterlevel := model.WaterLevel{
+				Date:       settime,
+				WaterLevel: telegrams[i].WaterLevelOn20h.Int32,
+			}
+			waterlevels = append(waterlevels, &waterlevel)
+		}
+	}
+
 	topic := s.KafkaConfig.Topic
 
-	err := kafka.SendMessageToKafka(s.KafkaProducer, topic, message)
+	for i := 0; i < len(waterlevels); i++ {
+
+		err := kafka.SendMessageToKafka(s.KafkaProducer, topic, waterlevels[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err = s.repository.RemoveAll(ctx)
 	if err != nil {
-		log.Printf("Failed to send message to Kafka: %v", err)
 		return nil, err
 	}
 
