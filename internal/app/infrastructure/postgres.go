@@ -1,4 +1,4 @@
-package repository
+package postgres
 
 import (
 	"context"
@@ -11,15 +11,15 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-type HydrologyBufferRepository struct {
+type HydrologyBufferStorage struct {
 	dbPool *pgxpool.Pool
 }
 
-func NewHydrologyBufferRepository(pool *pgxpool.Pool) *HydrologyBufferRepository {
-	return &HydrologyBufferRepository{dbPool: pool}
+func NewHydrologyBufferStorage(pool *pgxpool.Pool) *HydrologyBufferStorage {
+	return &HydrologyBufferStorage{dbPool: pool}
 }
 
-func (r *HydrologyBufferRepository) AddTelegram(ctx context.Context, data []model.Telegram) error {
+func (r *HydrologyBufferStorage) AddTelegram(ctx context.Context, data []model.Telegram) error {
 
 	tx, err := r.dbPool.Begin(ctx)
 	if err != nil {
@@ -105,7 +105,7 @@ func (r *HydrologyBufferRepository) AddTelegram(ctx context.Context, data []mode
 	return nil
 }
 
-func (r *HydrologyBufferRepository) GetTelegramByID(ctx context.Context, id uuid.UUID) (model.Telegram, error) {
+func (r *HydrologyBufferStorage) GetTelegramByID(ctx context.Context, id uuid.UUID) (model.Telegram, error) {
 
 	selectTelegramBuilder := goqu.From("telegram").
 		Where(goqu.Ex{"id": id}).
@@ -183,7 +183,7 @@ func (r *HydrologyBufferRepository) GetTelegramByID(ctx context.Context, id uuid
 	return telegram, nil
 }
 
-func (r *HydrologyBufferRepository) RemoveTelegrams(ctx context.Context, ids []uuid.UUID) error {
+func (r *HydrologyBufferStorage) RemoveTelegrams(ctx context.Context, ids []uuid.UUID) error {
 
 	tx, err := r.dbPool.Begin(ctx)
 	if err != nil {
@@ -217,7 +217,7 @@ func (r *HydrologyBufferRepository) RemoveTelegrams(ctx context.Context, ids []u
 	return nil
 }
 
-func (r *HydrologyBufferRepository) GetAll(ctx context.Context) ([]model.Telegram, error) {
+func (r *HydrologyBufferStorage) GetAll(ctx context.Context) ([]model.Telegram, error) {
 
 	selectBuilder := goqu.From("telegram")
 
@@ -311,7 +311,7 @@ func (r *HydrologyBufferRepository) GetAll(ctx context.Context) ([]model.Telegra
 	return telegrams, nil
 }
 
-func (r *HydrologyBufferRepository) UpdateTelegram(ctx context.Context, updatedTelegram model.Telegram) error {
+func (r *HydrologyBufferStorage) UpdateTelegram(ctx context.Context, updatedTelegram model.Telegram) error {
 
 	tx, err := r.dbPool.Begin(ctx)
 	if err != nil {
@@ -400,7 +400,7 @@ func (r *HydrologyBufferRepository) UpdateTelegram(ctx context.Context, updatedT
 	return nil
 }
 
-func (r *HydrologyBufferRepository) RemoveAll(ctx context.Context) error {
+func (r *HydrologyBufferStorage) RemoveAll(ctx context.Context) error {
 
 	tx, err := r.dbPool.Begin(ctx)
 	if err != nil {

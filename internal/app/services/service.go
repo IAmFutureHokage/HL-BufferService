@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/IAmFutureHokage/HL-BufferService/internal/app/model"
-	"github.com/IAmFutureHokage/HL-BufferService/internal/app/repository"
 	pb "github.com/IAmFutureHokage/HL-BufferService/internal/proto"
 	"github.com/IAmFutureHokage/HL-BufferService/pkg/decoder"
 	"github.com/IAmFutureHokage/HL-BufferService/pkg/encoder"
@@ -17,16 +16,25 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
+type Strorage interface {
+	AddTelegram(ctx context.Context, data []model.Telegram) error
+	GetTelegramByID(ctx context.Context, id uuid.UUID) (model.Telegram, error)
+	RemoveTelegrams(ctx context.Context, ids []uuid.UUID) error
+	GetAll(ctx context.Context) ([]model.Telegram, error)
+	UpdateTelegram(ctx context.Context, updatedTelegram model.Telegram) error
+	RemoveAll(ctx context.Context) error
+}
+
 type HydrologyBufferervice struct {
 	pb.UnimplementedHydrologyBufferServiceServer
-	repository    *repository.HydrologyBufferRepository
+	storage       Strorage
 	KafkaProducer sarama.SyncProducer
 	KafkaConfig   kafka.KafkaConfig
 }
 
-func NewHydrologyBufferService(repo *repository.HydrologyBufferRepository, kafkaProducer sarama.SyncProducer) *HydrologyBufferervice {
+func NewHydrologyBufferService(storage Strorage, kafkaProducer sarama.SyncProducer) *HydrologyBufferervice {
 	return &HydrologyBufferervice{
-		repository:    repo,
+		storage:       storage,
 		KafkaProducer: kafkaProducer,
 	}
 }
@@ -63,7 +71,7 @@ func (s *HydrologyBufferervice) AddTelegram(ctx context.Context, req *pb.AddTele
 		respose[i] = telegramToProto(&telegrams[i])
 	}
 
-	if err := s.repository.AddTelegram(ctx, telegrams); err != nil {
+	if err := s.storage.AddTelegram(ctx, telegrams); err != nil {
 		return nil, err
 	}
 
@@ -84,7 +92,7 @@ func (s *HydrologyBufferervice) RemoveTelegrams(ctx context.Context, req *pb.Rem
 		uuids[i] = id
 	}
 
-	err := s.repository.RemoveTelegrams(ctx, uuids)
+	err := s.storage.RemoveTelegrams(ctx, uuids)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +107,7 @@ func (s *HydrologyBufferervice) UpdateTelegramByInfo(ctx context.Context, req *p
 		return nil, err
 	}
 
-	telegram, err := s.repository.GetTelegramByID(ctx, telegramId)
+	telegram, err := s.storage.GetTelegramByID(ctx, telegramId)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +124,7 @@ func (s *HydrologyBufferervice) UpdateTelegramByInfo(ctx context.Context, req *p
 	telegram.Update(draftTelegram)
 	telegram.TelegramCode = telegramCode
 
-	err = s.repository.UpdateTelegram(ctx, telegram)
+	err = s.storage.UpdateTelegram(ctx, telegram)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +153,7 @@ func (s *HydrologyBufferervice) UpdateTelegramByCode(ctx context.Context, req *p
 		return nil, err
 	}
 
-	telegram, err := s.repository.GetTelegramByID(ctx, telegramId)
+	telegram, err := s.storage.GetTelegramByID(ctx, telegramId)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +161,7 @@ func (s *HydrologyBufferervice) UpdateTelegramByCode(ctx context.Context, req *p
 	telegram.Update(draftTelegram)
 	telegram.TelegramCode = telegramCode
 
-	err = s.repository.UpdateTelegram(ctx, telegram)
+	err = s.storage.UpdateTelegram(ctx, telegram)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +180,7 @@ func (s *HydrologyBufferervice) GetTelegram(ctx context.Context, req *pb.GetTele
 		return nil, err
 	}
 
-	telegram, err := s.repository.GetTelegramByID(ctx, telegramId)
+	telegram, err := s.storage.GetTelegramByID(ctx, telegramId)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +194,7 @@ func (s *HydrologyBufferervice) GetTelegram(ctx context.Context, req *pb.GetTele
 
 func (s *HydrologyBufferervice) GetTelegrams(ctx context.Context, req *pb.GetTelegramsRequest) (*pb.GetTelegramsResponse, error) {
 
-	telegrams, err := s.repository.GetAll(ctx)
+	telegrams, err := s.storage.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +213,7 @@ func (s *HydrologyBufferervice) GetTelegrams(ctx context.Context, req *pb.GetTel
 
 func (s *HydrologyBufferervice) TransferToSystem(ctx context.Context, req *pb.TransferToSystemRequest) (*pb.TransferToSystemResponse, error) {
 
-	telegrams, err := s.repository.GetAll(ctx)
+	telegrams, err := s.storage.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +258,7 @@ func (s *HydrologyBufferervice) TransferToSystem(ctx context.Context, req *pb.Tr
 		}
 	}
 
-	err = s.repository.RemoveAll(ctx)
+	err = s.storage.RemoveAll(ctx)
 	if err != nil {
 		return nil, err
 	}

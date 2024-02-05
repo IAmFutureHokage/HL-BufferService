@@ -8,6 +8,7 @@ package hydrologybuffer;
 option go_package = "github.com/IAmFutureHokage/HL-BufferService";
 
 service HydrologyBufferService {
+    rpc PingService(PingRequest) returns (PingResponse);
     rpc AddTelegram(AddTelegramRequest) returns (AddTelegramResponse);
     rpc RemoveTelegrams(RemoveTelegramsRequest) returns (RemoveTelegramsResponse);
     rpc UpdateTelegramByInfo(UpdateTelegramByInfoRequest) returns (UpdateTelegramResponse);
@@ -15,6 +16,13 @@ service HydrologyBufferService {
     rpc GetTelegram(GetTelegramRequest) returns (GetTelegramResponse);
     rpc GetTelegrams(GetTelegramsRequest) returns (GetTelegramsResponse);
     rpc TransferToSystem(TransferToSystemRequest) returns (TransferToSystemResponse);
+}
+
+message PingRequest {
+}
+
+message PingResponse {
+    bool available = 1;
 }
 
 message Telegram {
@@ -125,6 +133,7 @@ message GetTelegramsResponse {
 }
 
 message TransferToSystemRequest {
+    repeated string id = 1;
 }
 
 message TransferToSystemResponse {

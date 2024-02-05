@@ -9,8 +9,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	postgres "github.com/IAmFutureHokage/HL-BufferService/internal/app/infrastructure"
 	"github.com/IAmFutureHokage/HL-BufferService/internal/app/migration"
-	"github.com/IAmFutureHokage/HL-BufferService/internal/app/repository"
 	"github.com/IAmFutureHokage/HL-BufferService/internal/app/services"
 	pb "github.com/IAmFutureHokage/HL-BufferService/internal/proto"
 	"github.com/IAmFutureHokage/HL-BufferService/pkg/database"
@@ -84,8 +84,8 @@ func main() {
 		log.Fatalf("Failed to execute migration: %v", err)
 	}
 
-	hydrologyBufferRepository := repository.NewHydrologyBufferRepository(dbPool)
-	hydrologyBufferService := services.NewHydrologyBufferService(hydrologyBufferRepository, kafkaProducer)
+	postgresStorage := postgres.NewHydrologyBufferStorage(dbPool)
+	hydrologyBufferService := services.NewHydrologyBufferService(postgresStorage, kafkaProducer)
 	hydrologyBufferService.SetKafkaConfig(kafkaConfig)
 
 	s := grpc.NewServer()
