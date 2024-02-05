@@ -3,7 +3,7 @@ package encoder
 import (
 	"testing"
 
-	types "github.com/IAmFutureHokage/HL-BufferService/pkg/types"
+	types "github.com/IAmFutureHokage/HL-BufferService/pkg/decoder/types"
 )
 
 func TestPostCodeEncoder(t *testing.T) {

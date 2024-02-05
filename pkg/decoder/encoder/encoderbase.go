@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	types "github.com/IAmFutureHokage/HL-BufferService/pkg/types"
+	types "github.com/IAmFutureHokage/HL-BufferService/pkg/decoder/types"
 )
 
 func PostCodeEncoder(p *types.PostCode) (string, error) {

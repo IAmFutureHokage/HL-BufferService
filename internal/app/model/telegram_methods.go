@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"time"
 
-	types "github.com/IAmFutureHokage/HL-BufferService/pkg/types"
+	"github.com/IAmFutureHokage/HL-BufferService/pkg/decoder"
+	decoder_types "github.com/IAmFutureHokage/HL-BufferService/pkg/decoder/types"
+
 	"github.com/google/uuid"
 )
 
-func (r *Telegram) Update(draftTg *types.Telegram) error {
+func (r *Telegram) Update(draftTg *decoder.Telegram) error {
 
 	if r == nil {
 		return errors.New("nil pointer to Telegram")
@@ -158,7 +160,7 @@ func (r *Telegram) Update(draftTg *types.Telegram) error {
 	return nil
 }
 
-func (r *Phenomenia) ToModelIcePhenomeniaConvert(draftPh *types.Phenomenia) error {
+func (r *Phenomenia) ToModelIcePhenomeniaConvert(draftPh *decoder_types.Phenomenia) error {
 
 	if draftPh == nil {
 		return fmt.Errorf("Invalid ice phenomenia")

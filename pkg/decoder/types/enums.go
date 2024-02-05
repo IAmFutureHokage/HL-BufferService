@@ -1,4 +1,4 @@
-package types
+package decoder_types
 
 type IcePhenomeniaState byte
 

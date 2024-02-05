@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	types "github.com/IAmFutureHokage/HL-BufferService/pkg/types"
+	types "github.com/IAmFutureHokage/HL-BufferService/pkg/decoder"
 )
 
 func FullEncoder(hltels []*types.Telegram) (string, error) {

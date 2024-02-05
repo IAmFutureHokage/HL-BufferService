@@ -1,4 +1,4 @@
-package types
+package decoder_types
 
 import "math"
 
@@ -6,6 +6,18 @@ const (
 	CouldNotMeasure          = math.MinInt32
 	CouldNotMeasureByte byte = 100
 )
+
+type Reservoir struct {
+	HeadwaterLevel        *HeadwaterLevel
+	AverageReservoirLevel *AverageReservoirLevel
+	DownstreamLevel       *DownstreamLevel
+	ReservoirVolume       *ReservoirVolume
+}
+
+type ReservoirWaterInflow struct {
+	Inflow *Inflow
+	Reset  *Reset
+}
 
 type PostCode string
 

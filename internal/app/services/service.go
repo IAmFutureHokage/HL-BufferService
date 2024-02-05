@@ -7,9 +7,9 @@ import (
 	"github.com/IAmFutureHokage/HL-BufferService/internal/app/model"
 	pb "github.com/IAmFutureHokage/HL-BufferService/internal/proto"
 	"github.com/IAmFutureHokage/HL-BufferService/pkg/decoder"
-	"github.com/IAmFutureHokage/HL-BufferService/pkg/encoder"
+	"github.com/IAmFutureHokage/HL-BufferService/pkg/decoder/encoder"
+	decoder_types "github.com/IAmFutureHokage/HL-BufferService/pkg/decoder/types"
 	"github.com/IAmFutureHokage/HL-BufferService/pkg/kafka"
-	"github.com/IAmFutureHokage/HL-BufferService/pkg/types"
 	"github.com/Shopify/sarama"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -41,7 +41,7 @@ func NewHydrologyBufferService(storage Strorage, kafkaProducer sarama.SyncProduc
 
 func (s *HydrologyBufferervice) AddTelegram(ctx context.Context, req *pb.AddTelegramRequest) (*pb.AddTelegramResponse, error) {
 
-	draftTelegrams, err := decoder.FullDecoder(req.Code)
+	draftTelegrams, err := decoder.NewtelegramsSlice(req.Code)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func (s *HydrologyBufferervice) UpdateTelegramByInfo(ctx context.Context, req *p
 
 func (s *HydrologyBufferervice) UpdateTelegramByCode(ctx context.Context, req *pb.UpdateTelegramByCodeRequest) (*pb.UpdateTelegramResponse, error) {
 
-	draftTelegram, err := decoder.Decoder(req.TelegramCode)
+	draftTelegram, err := decoder.NewTelegram(req.TelegramCode)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +222,7 @@ func (s *HydrologyBufferervice) TransferToSystem(ctx context.Context, req *pb.Tr
 
 	for i := 0; i < len(telegrams); i++ {
 
-		if telegrams[i].WaterLevelOnTime.Valid && telegrams[i].WaterLevelOnTime.Int32 != types.CouldNotMeasure {
+		if telegrams[i].WaterLevelOnTime.Valid && telegrams[i].WaterLevelOnTime.Int32 != decoder_types.CouldNotMeasure {
 			waterlevel := model.WaterLevel{
 				Date:       telegrams[i].DateTime,
 				WaterLevel: telegrams[i].WaterLevelOnTime.Int32,
@@ -231,7 +231,7 @@ func (s *HydrologyBufferervice) TransferToSystem(ctx context.Context, req *pb.Tr
 			waterlevels = append(waterlevels, &waterlevel)
 		}
 
-		if telegrams[i].WaterLevelOn20h.Valid && telegrams[i].WaterLevelOn20h.Int32 != types.CouldNotMeasure {
+		if telegrams[i].WaterLevelOn20h.Valid && telegrams[i].WaterLevelOn20h.Int32 != decoder_types.CouldNotMeasure {
 			settime := time.Date(
 				telegrams[i].DateTime.Year(),
 				telegrams[i].DateTime.Month(),
@@ -387,34 +387,34 @@ func telegramToProto(req *model.Telegram) (res *pb.Telegram) {
 	return
 }
 
-func protoToDraft(req *pb.Telegram) (res *types.Telegram) {
-	res = &types.Telegram{}
+func protoToDraft(req *pb.Telegram) (res *decoder.Telegram) {
+	res = &decoder.Telegram{}
 
-	res.PostCode = types.PostCode(req.PostCode)
+	res.PostCode = decoder_types.PostCode(req.PostCode)
 
 	res.DateAndTime.Date = byte(req.Datetime.AsTime().Day())
 	res.DateAndTime.Time = byte(req.Datetime.AsTime().Hour())
 	res.DateAndTime.EndBlockNum = 1
 
-	res.IsDangerous = types.IsDangerous(req.IsDangerous)
+	res.IsDangerous = decoder_types.IsDangerous(req.IsDangerous)
 
 	if req.WaterLevelOnTime != nil {
-		buffer := types.WaterLevelOnTime(req.WaterLevelOnTime.Value)
+		buffer := decoder_types.WaterLevelOnTime(req.WaterLevelOnTime.Value)
 		res.WaterLevelOnTime = &buffer
 	}
 
 	if req.DeltaWaterLevel != nil {
-		buffer := types.DeltaWaterLevel(req.DeltaWaterLevel.Value)
+		buffer := decoder_types.DeltaWaterLevel(req.DeltaWaterLevel.Value)
 		res.DeltaWaterLevel = &buffer
 	}
 
 	if req.WaterLevelOn20H != nil {
-		buffer := types.WaterLevelOn20h(req.WaterLevelOn20H.Value)
+		buffer := decoder_types.WaterLevelOn20h(req.WaterLevelOn20H.Value)
 		res.WaterLevelOn20h = &buffer
 	}
 
 	if req.WaterTemperature != nil || req.AirTemperature != nil {
-		res.Temperature = &types.Temperature{}
+		res.Temperature = &decoder_types.Temperature{}
 	}
 
 	if req.WaterTemperature != nil {
@@ -428,12 +428,12 @@ func protoToDraft(req *pb.Telegram) (res *types.Telegram) {
 	}
 
 	if req.IcePhenomeniaState != nil {
-		buffer := types.IcePhenomeniaState(req.IcePhenomeniaState.Value)
+		buffer := decoder_types.IcePhenomeniaState(req.IcePhenomeniaState.Value)
 		res.IcePhenomeniaState = &buffer
 	}
 
 	if req.IceHeight != nil || req.SnowHeight != nil {
-		res.IceInfo = &types.IceInfo{}
+		res.IceInfo = &decoder_types.IceInfo{}
 	}
 
 	if req.IceHeight != nil {
@@ -442,17 +442,17 @@ func protoToDraft(req *pb.Telegram) (res *types.Telegram) {
 	}
 
 	if req.SnowHeight != nil {
-		buffer := types.SnowHeight(req.SnowHeight.Value)
+		buffer := decoder_types.SnowHeight(req.SnowHeight.Value)
 		res.IceInfo.Snow = &buffer
 	}
 
 	if req.WaterFlow != nil {
-		buffer := types.Waterflow(req.WaterFlow.Value)
+		buffer := decoder_types.Waterflow(req.WaterFlow.Value)
 		res.Waterflow = &buffer
 	}
 
 	if req.PrecipitationValue != nil || req.PrecipitationDuration != nil {
-		res.Precipitation = &types.Precipitation{}
+		res.Precipitation = &decoder_types.Precipitation{}
 	}
 
 	if req.PrecipitationValue != nil {
@@ -461,57 +461,57 @@ func protoToDraft(req *pb.Telegram) (res *types.Telegram) {
 	}
 
 	if req.PrecipitationDuration != nil {
-		buffer := types.PrecipitationDuration(req.PrecipitationDuration.Value)
+		buffer := decoder_types.PrecipitationDuration(req.PrecipitationDuration.Value)
 		res.Precipitation.Duration = &buffer
 	}
 
 	if req.ReservoirDate != nil {
-		buffer := types.IsReservoirDate(req.ReservoirDate.AsTime().Day())
+		buffer := decoder_types.IsReservoirDate(req.ReservoirDate.AsTime().Day())
 		res.IsReservoirDate = &buffer
-		res.Reservoir = &types.Reservoir{}
+		res.Reservoir = &decoder_types.Reservoir{}
 
 		if req.HeadwaterLevel != nil {
-			buffer := types.HeadwaterLevel(req.HeadwaterLevel.Value)
+			buffer := decoder_types.HeadwaterLevel(req.HeadwaterLevel.Value)
 			res.Reservoir.HeadwaterLevel = &buffer
 		}
 
 		if req.AverageReservoirLevel != nil {
-			buffer := types.AverageReservoirLevel(req.AverageReservoirLevel.Value)
+			buffer := decoder_types.AverageReservoirLevel(req.AverageReservoirLevel.Value)
 			res.Reservoir.AverageReservoirLevel = &buffer
 		}
 
 		if req.DownstreamLevel != nil {
-			buffer := types.DownstreamLevel(req.DownstreamLevel.Value)
+			buffer := decoder_types.DownstreamLevel(req.DownstreamLevel.Value)
 			res.Reservoir.DownstreamLevel = &buffer
 		}
 
 		if req.ReservoirVolume != nil {
-			buffer := types.ReservoirVolume(req.ReservoirVolume.Value)
+			buffer := decoder_types.ReservoirVolume(req.ReservoirVolume.Value)
 			res.Reservoir.ReservoirVolume = &buffer
 		}
 	}
 
 	if req.ReservoirWaterInflowDate != nil {
-		buffer := types.IsReservoirWaterInflowDate(req.ReservoirWaterInflowDate.AsTime().Day())
+		buffer := decoder_types.IsReservoirWaterInflowDate(req.ReservoirWaterInflowDate.AsTime().Day())
 		res.IsReservoirWaterInflowDate = &buffer
-		res.ReservoirWaterInflow = &types.ReservoirWaterInflow{}
+		res.ReservoirWaterInflow = &decoder_types.ReservoirWaterInflow{}
 
 		if req.Inflow != nil {
-			buffer := types.Inflow(req.Inflow.Value)
+			buffer := decoder_types.Inflow(req.Inflow.Value)
 			res.ReservoirWaterInflow.Inflow = &buffer
 		}
 
 		if req.Reset_ != nil {
-			buffer := types.Reset(req.Reset_.Value)
+			buffer := decoder_types.Reset(req.Reset_.Value)
 			res.ReservoirWaterInflow.Reset = &buffer
 		}
 	}
 
 	if len(req.IcePhenomenias) != 0 {
-		res.IcePhenomenia = make([]*types.Phenomenia, len(req.IcePhenomenias))
+		res.IcePhenomenia = make([]*decoder_types.Phenomenia, len(req.IcePhenomenias))
 
 		for i := 0; i < len(res.IcePhenomenia); i++ {
-			res.IcePhenomenia[i] = &types.Phenomenia{Phenomen: byte(req.IcePhenomenias[i].Phenomen)}
+			res.IcePhenomenia[i] = &decoder_types.Phenomenia{Phenomen: byte(req.IcePhenomenias[i].Phenomen)}
 
 			if req.IcePhenomenias[i].Intensity != nil {
 				res.IcePhenomenia[i].IsUntensity = true
