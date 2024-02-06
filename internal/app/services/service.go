@@ -2,9 +2,11 @@ package services
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/IAmFutureHokage/HL-BufferService/internal/app/model"
+	"github.com/IAmFutureHokage/HL-BufferService/internal/app/services/kafka_dto"
 	pb "github.com/IAmFutureHokage/HL-BufferService/internal/proto"
 	"github.com/IAmFutureHokage/HL-BufferService/pkg/decoder"
 	"github.com/IAmFutureHokage/HL-BufferService/pkg/decoder/encoder"
@@ -218,48 +220,69 @@ func (s *HydrologyBufferervice) TransferToSystem(ctx context.Context, req *pb.Tr
 		return nil, err
 	}
 
-	waterlevels := make([]*model.WaterLevel, 0, len(telegrams)*2)
+	const maxBatchSize = 200 // Максимальное количество элементов в батче
 
-	for i := 0; i < len(telegrams); i++ {
+	numBatches := (len(telegrams)*2 + maxBatchSize - 1) / maxBatchSize
+	batches := make([]kafka_dto.WaterLevelRecords, numBatches)
 
-		if telegrams[i].WaterLevelOnTime.Valid && telegrams[i].WaterLevelOnTime.Int32 != decoder_types.CouldNotMeasure {
-			waterlevel := model.WaterLevel{
-				Date:       telegrams[i].DateTime,
-				WaterLevel: telegrams[i].WaterLevelOnTime.Int32,
-				PostCode:   telegrams[i].PostCode,
-			}
-			waterlevels = append(waterlevels, &waterlevel)
+	for i := 0; i < len(batches); i++ {
+		batches[i] = *kafka_dto.NewWaterLevelRecords(maxBatchSize)
+	}
+
+	addToBatch := func(wl kafka_dto.WaterLevel, idx int) {
+		batchIdx := idx / maxBatchSize
+		batches[batchIdx].Waterlevels = append(batches[batchIdx].Waterlevels, wl)
+	}
+
+	for idx, telegram := range telegrams {
+		if telegram.WaterLevelOnTime.Valid && telegram.WaterLevelOnTime.Int32 != decoder_types.CouldNotMeasure {
+			addToBatch(kafka_dto.WaterLevel{
+				Date:       telegram.DateTime,
+				WaterLevel: telegram.WaterLevelOnTime.Int32,
+				PostCode:   telegram.PostCode,
+			}, idx)
+			idx++
 		}
 
-		if telegrams[i].WaterLevelOn20h.Valid && telegrams[i].WaterLevelOn20h.Int32 != decoder_types.CouldNotMeasure {
+		if telegram.WaterLevelOn20h.Valid && telegram.WaterLevelOn20h.Int32 != decoder_types.CouldNotMeasure {
 			settime := time.Date(
-				telegrams[i].DateTime.Year(),
-				telegrams[i].DateTime.Month(),
-				telegrams[i].DateTime.Day(),
+				telegram.DateTime.Year(),
+				telegram.DateTime.Month(),
+				telegram.DateTime.Day(),
 				20, 0, 0, 0,
-				telegrams[i].DateTime.Location(),
+				telegram.DateTime.Location(),
 			)
-			waterlevel := model.WaterLevel{
+			addToBatch(kafka_dto.WaterLevel{
 				Date:       settime,
-				WaterLevel: telegrams[i].WaterLevelOn20h.Int32,
-				PostCode:   telegrams[i].PostCode,
+				WaterLevel: telegram.WaterLevelOn20h.Int32,
+				PostCode:   telegram.PostCode,
+			}, idx)
+			idx++
+		}
+	}
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, len(batches))
+
+	for _, batch := range batches {
+		wg.Add(1)
+		go func(b kafka_dto.WaterLevelRecords) {
+			defer wg.Done()
+			if err := kafka.SendMessageToKafka(s.KafkaProducer, s.KafkaConfig.Topic, &b); err != nil {
+				errCh <- err
 			}
-			waterlevels = append(waterlevels, &waterlevel)
-		}
+		}(batch)
+	}
+	go func() {
+		wg.Wait()
+		close(errCh)
+	}()
+
+	for err := range errCh {
+		return nil, err
 	}
 
-	topic := s.KafkaConfig.Topic
-
-	for i := 0; i < len(waterlevels); i++ {
-
-		err := kafka.SendMessageToKafka(s.KafkaProducer, topic, waterlevels[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	err = s.storage.RemoveAll(ctx)
-	if err != nil {
+	if err := s.storage.RemoveAll(ctx); err != nil {
 		return nil, err
 	}
 

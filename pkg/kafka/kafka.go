@@ -18,9 +18,9 @@ type MessageProducer interface {
 
 func NewKafkaProducer(config KafkaConfig) (sarama.SyncProducer, error) {
 	producerConfig := sarama.NewConfig()
-	producerConfig.Producer.RequiredAcks = sarama.WaitForLocal       // Принимать подтверждение после записи в локальный лог
-	producerConfig.Producer.Compression = sarama.CompressionSnappy   // Используем сжатие Snappy
-	producerConfig.Producer.Flush.Frequency = 500 * time.Millisecond // Как часто отправлять накопленные сообщения
+	producerConfig.Producer.RequiredAcks = sarama.WaitForLocal      // Принимать подтверждение после записи в локальный лог
+	producerConfig.Producer.Compression = sarama.CompressionSnappy  // Используем сжатие Snappy
+	producerConfig.Producer.Flush.Frequency = 50 * time.Millisecond // Как часто отправлять накопленные сообщения
 	producerConfig.Producer.Return.Successes = true
 
 	producer, err := sarama.NewSyncProducer(config.BrokerList, producerConfig)

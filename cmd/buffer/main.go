@@ -108,5 +108,5 @@ func main() {
 	if err := kafkaProducer.Close(); err != nil {
 		log.Printf("Error closing Kafka producer: %v", err)
 	}
-	fmt.Println("Server gracefully stopped")
+	log.Fatalf("Server gracefully stopped")
 }
