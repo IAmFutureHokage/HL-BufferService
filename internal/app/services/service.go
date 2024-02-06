@@ -220,7 +220,7 @@ func (s *HydrologyBufferervice) TransferToSystem(ctx context.Context, req *pb.Tr
 		return nil, err
 	}
 
-	const maxBatchSize = 200 // Максимальное количество элементов в батче
+	const maxBatchSize = 100 // Максимальное количество элементов в батче
 
 	numBatches := (len(telegrams)*2 + maxBatchSize - 1) / maxBatchSize
 	batches := make([]kafka_dto.WaterLevelRecords, numBatches)
