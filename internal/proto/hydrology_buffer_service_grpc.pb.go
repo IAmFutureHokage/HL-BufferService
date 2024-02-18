@@ -19,6 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
+	HydrologyBufferService_PingService_FullMethodName          = "/hydrologybuffer.HydrologyBufferService/PingService"
 	HydrologyBufferService_AddTelegram_FullMethodName          = "/hydrologybuffer.HydrologyBufferService/AddTelegram"
 	HydrologyBufferService_RemoveTelegrams_FullMethodName      = "/hydrologybuffer.HydrologyBufferService/RemoveTelegrams"
 	HydrologyBufferService_UpdateTelegramByInfo_FullMethodName = "/hydrologybuffer.HydrologyBufferService/UpdateTelegramByInfo"
@@ -32,6 +33,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type HydrologyBufferServiceClient interface {
+	PingService(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 	AddTelegram(ctx context.Context, in *AddTelegramRequest, opts ...grpc.CallOption) (*AddTelegramResponse, error)
 	RemoveTelegrams(ctx context.Context, in *RemoveTelegramsRequest, opts ...grpc.CallOption) (*RemoveTelegramsResponse, error)
 	UpdateTelegramByInfo(ctx context.Context, in *UpdateTelegramByInfoRequest, opts ...grpc.CallOption) (*UpdateTelegramResponse, error)
@@ -47,6 +49,15 @@ type hydrologyBufferServiceClient struct {
 
 func NewHydrologyBufferServiceClient(cc grpc.ClientConnInterface) HydrologyBufferServiceClient {
 	return &hydrologyBufferServiceClient{cc}
+}
+
+func (c *hydrologyBufferServiceClient) PingService(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error) {
+	out := new(PingResponse)
+	err := c.cc.Invoke(ctx, HydrologyBufferService_PingService_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *hydrologyBufferServiceClient) AddTelegram(ctx context.Context, in *AddTelegramRequest, opts ...grpc.CallOption) (*AddTelegramResponse, error) {
@@ -116,6 +127,7 @@ func (c *hydrologyBufferServiceClient) TransferToSystem(ctx context.Context, in 
 // All implementations must embed UnimplementedHydrologyBufferServiceServer
 // for forward compatibility
 type HydrologyBufferServiceServer interface {
+	PingService(context.Context, *PingRequest) (*PingResponse, error)
 	AddTelegram(context.Context, *AddTelegramRequest) (*AddTelegramResponse, error)
 	RemoveTelegrams(context.Context, *RemoveTelegramsRequest) (*RemoveTelegramsResponse, error)
 	UpdateTelegramByInfo(context.Context, *UpdateTelegramByInfoRequest) (*UpdateTelegramResponse, error)
@@ -130,6 +142,9 @@ type HydrologyBufferServiceServer interface {
 type UnimplementedHydrologyBufferServiceServer struct {
 }
 
+func (UnimplementedHydrologyBufferServiceServer) PingService(context.Context, *PingRequest) (*PingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PingService not implemented")
+}
 func (UnimplementedHydrologyBufferServiceServer) AddTelegram(context.Context, *AddTelegramRequest) (*AddTelegramResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddTelegram not implemented")
 }
@@ -163,6 +178,24 @@ type UnsafeHydrologyBufferServiceServer interface {
 
 func RegisterHydrologyBufferServiceServer(s grpc.ServiceRegistrar, srv HydrologyBufferServiceServer) {
 	s.RegisterService(&HydrologyBufferService_ServiceDesc, srv)
+}
+
+func _HydrologyBufferService_PingService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HydrologyBufferServiceServer).PingService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HydrologyBufferService_PingService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HydrologyBufferServiceServer).PingService(ctx, req.(*PingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _HydrologyBufferService_AddTelegram_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -298,6 +331,10 @@ var HydrologyBufferService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "hydrologybuffer.HydrologyBufferService",
 	HandlerType: (*HydrologyBufferServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "PingService",
+			Handler:    _HydrologyBufferService_PingService_Handler,
+		},
 		{
 			MethodName: "AddTelegram",
 			Handler:    _HydrologyBufferService_AddTelegram_Handler,

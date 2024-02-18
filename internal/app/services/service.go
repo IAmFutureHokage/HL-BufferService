@@ -24,7 +24,7 @@ type Strorage interface {
 	RemoveTelegrams(ctx context.Context, ids []uuid.UUID) error
 	GetAll(ctx context.Context) ([]model.Telegram, error)
 	UpdateTelegram(ctx context.Context, updatedTelegram model.Telegram) error
-	RemoveAll(ctx context.Context) error
+	GetTelegramsById(ctx context.Context, ids []uuid.UUID) ([]model.Telegram, error)
 }
 
 type HydrologyBufferervice struct {
@@ -215,7 +215,17 @@ func (s *HydrologyBufferervice) GetTelegrams(ctx context.Context, req *pb.GetTel
 
 func (s *HydrologyBufferervice) TransferToSystem(ctx context.Context, req *pb.TransferToSystemRequest) (*pb.TransferToSystemResponse, error) {
 
-	telegrams, err := s.storage.GetAll(ctx)
+	uuids := make([]uuid.UUID, len(req.Id))
+
+	for i := 0; i < len(uuids); i++ {
+		id, err := uuid.Parse(req.Id[i])
+		if err != nil {
+			return nil, err
+		}
+		uuids[i] = id
+	}
+
+	telegrams, err := s.storage.GetTelegramsById(ctx, uuids)
 	if err != nil {
 		return nil, err
 	}
@@ -282,7 +292,7 @@ func (s *HydrologyBufferervice) TransferToSystem(ctx context.Context, req *pb.Tr
 		return nil, err
 	}
 
-	if err := s.storage.RemoveAll(ctx); err != nil {
+	if err := s.storage.RemoveTelegrams(ctx, uuids); err != nil {
 		return nil, err
 	}
 

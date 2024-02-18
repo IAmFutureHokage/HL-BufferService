@@ -400,47 +400,7 @@ func (r *HydrologyBufferStorage) UpdateTelegram(ctx context.Context, updatedTele
 	return nil
 }
 
-func (r *HydrologyBufferStorage) RemoveAll(ctx context.Context) error {
+func (r *HydrologyBufferStorage) GetTelegramsById(ctx context.Context, ids []uuid.UUID) ([]model.Telegram, error) {
 
-	tx, err := r.dbPool.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err != nil {
-			tx.Rollback(ctx)
-			fmt.Println("rollback error:", err)
-			return
-		}
-		err = tx.Commit(ctx)
-		if err != nil {
-			fmt.Println("commit error:", err)
-		}
-	}()
-
-	deletePhenomeniaBuilder := goqu.Delete("phenomenia")
-
-	sqlPhenomenia, argsPhenomenia, err := deletePhenomeniaBuilder.ToSQL()
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(ctx, sqlPhenomenia, argsPhenomenia...)
-	if err != nil {
-		return err
-	}
-
-	deleteTelegramBuilder := goqu.Delete("telegram")
-
-	sqlTelegram, argsTelegram, err := deleteTelegramBuilder.ToSQL()
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(ctx, sqlTelegram, argsTelegram...)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return nil, nil
 }

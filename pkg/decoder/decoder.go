@@ -887,7 +887,7 @@ func (t *Telegram) inflowInit(s string) error {
 func (t *Telegram) resetInit(s string) error {
 
 	if t.ReservoirWaterInflow == nil {
-		return fmt.Errorf("Reservoir Water Inflow data not init")
+		return fmt.Errorf("955-блок не инициализирован")
 	}
 
 	err := checkCodeBlock(s)
@@ -896,7 +896,7 @@ func (t *Telegram) resetInit(s string) error {
 	}
 
 	if s[0] != '7' {
-		return fmt.Errorf("first characters must be '7'")
+		return fmt.Errorf("Ошибка в блоке %s, блок должен начинаться с 7", s)
 	}
 
 	if s[1:] == "////" {
@@ -908,7 +908,7 @@ func (t *Telegram) resetInit(s string) error {
 
 	factor, err := strconv.Atoi(s[1:2])
 	if err != nil || factor < 1 || factor > 5 {
-		return fmt.Errorf("Ivalid factor inflow value")
+		return fmt.Errorf("Ошибка в блоке %s, Фактор должен быть от 1 до 5", s)
 	}
 
 	reset, err := strconv.Atoi(s[2:])
@@ -936,7 +936,7 @@ func parseString(input string) ([]string, error) {
 
 	for _, s := range substrings {
 		if len(s) != 5 {
-			return nil, fmt.Errorf("неверный формат: подстрока '%s' должна иметь 5 символов", s)
+			return nil, fmt.Errorf("Неверный формат: подстрока '%s' должна иметь 5 символов", s)
 		}
 	}
 

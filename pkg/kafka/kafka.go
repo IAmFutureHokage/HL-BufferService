@@ -25,7 +25,7 @@ func NewKafkaProducer(config KafkaConfig) (sarama.SyncProducer, error) {
 
 	producer, err := sarama.NewSyncProducer(config.BrokerList, producerConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Kafka producer: %v", err)
+		return nil, fmt.Errorf("Не удалось создать кафка-продюссера: %v", err)
 	}
 	return producer, nil
 }
@@ -33,7 +33,7 @@ func NewKafkaProducer(config KafkaConfig) (sarama.SyncProducer, error) {
 func SendMessageToKafka(producer sarama.SyncProducer, topic string, messageProducer MessageProducer) error {
 	messageBytes, err := messageProducer.Serialize()
 	if err != nil {
-		return fmt.Errorf("failed to serialize message: %v", err)
+		return fmt.Errorf("Ошибка серилизации: %v", err)
 	}
 
 	msg := &sarama.ProducerMessage{
@@ -43,7 +43,7 @@ func SendMessageToKafka(producer sarama.SyncProducer, topic string, messageProdu
 
 	_, _, err = producer.SendMessage(msg)
 	if err != nil {
-		return fmt.Errorf("failed to send message to Kafka: %v", err)
+		return fmt.Errorf("Не удалось отправить сообщение в Kafka: %v", err)
 	}
 
 	return nil
