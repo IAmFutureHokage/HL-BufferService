@@ -402,5 +402,96 @@ func (r *HydrologyBufferStorage) UpdateTelegram(ctx context.Context, updatedTele
 
 func (r *HydrologyBufferStorage) GetTelegramsById(ctx context.Context, ids []uuid.UUID) ([]model.Telegram, error) {
 
-	return nil, nil
+	var telegrams []model.Telegram
+
+	selectTelegramBuilder := goqu.From("telegram").
+		Where(goqu.Ex{"id": ids})
+
+	sqlTelegram, argsTelegram, err := selectTelegramBuilder.ToSQL()
+	if err != nil {
+		return nil, err
+	}
+
+	rowsTelegram, err := r.dbPool.Query(ctx, sqlTelegram, argsTelegram...)
+	if err != nil {
+		return nil, err
+	}
+	defer rowsTelegram.Close()
+
+	for rowsTelegram.Next() {
+		var telegram model.Telegram
+		err := rowsTelegram.Scan(
+			&telegram.Id,
+			&telegram.GroupId,
+			&telegram.TelegramCode,
+			&telegram.PostCode,
+			&telegram.DateTime,
+			&telegram.EndBlockNum,
+			&telegram.IsDangerous,
+			&telegram.WaterLevelOnTime,
+			&telegram.DeltaWaterLevel,
+			&telegram.WaterLevelOn20h,
+			&telegram.WaterTemperature,
+			&telegram.AirTemperature,
+			&telegram.IcePhenomeniaState,
+			&telegram.Ice,
+			&telegram.Snow,
+			&telegram.Waterflow,
+			&telegram.PrecipitationValue,
+			&telegram.PrecipitationDuration,
+			&telegram.ReservoirDate,
+			&telegram.HeadwaterLevel,
+			&telegram.AverageReservoirLevel,
+			&telegram.DownstreamLevel,
+			&telegram.ReservoirVolume,
+			&telegram.IsReservoirWaterInflowDate,
+			&telegram.Inflow,
+			&telegram.Reset,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		telegrams = append(telegrams, telegram)
+	}
+
+	selectPhenomeniaBuilder := goqu.From("phenomenia").
+		Where(goqu.Ex{"telegramid": ids})
+
+	sqlPhenomenia, argsPhenomenia, err := selectPhenomeniaBuilder.ToSQL()
+	if err != nil {
+		return nil, err
+	}
+
+	rowsPhenomenia, err := r.dbPool.Query(ctx, sqlPhenomenia, argsPhenomenia...)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rowsPhenomenia.Close()
+
+	telegramMap := make(map[uuid.UUID]*model.Telegram)
+	for _, t := range telegrams {
+		telegramMap[t.Id] = &t
+	}
+
+	for rowsPhenomenia.Next() {
+		var phenomenia model.Phenomenia
+		err := rowsPhenomenia.Scan(
+			&phenomenia.Id,
+			&phenomenia.TelegramId,
+			&phenomenia.Phenomen,
+			&phenomenia.IsUntensity,
+			&phenomenia.Intensity,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if telegram, ok := telegramMap[phenomenia.TelegramId]; ok {
+			telegram.IcePhenomenia = append(telegram.IcePhenomenia, &phenomenia)
+		}
+	}
+
+	return telegrams, nil
 }
