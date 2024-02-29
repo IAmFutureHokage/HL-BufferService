@@ -402,10 +402,10 @@ func (r *HydrologyBufferStorage) UpdateTelegram(ctx context.Context, updatedTele
 
 func (r *HydrologyBufferStorage) GetTelegramsById(ctx context.Context, ids []uuid.UUID) ([]model.Telegram, error) {
 
-	var telegrams []model.Telegram
+	telegrams := make([]model.Telegram, cap(ids))
 
 	selectTelegramBuilder := goqu.From("telegram").
-		Where(goqu.Ex{"id": ids})
+		Where(goqu.Ex{"id": ids}).Limit(uint(cap(ids)))
 
 	sqlTelegram, argsTelegram, err := selectTelegramBuilder.ToSQL()
 	if err != nil {
@@ -470,7 +470,7 @@ func (r *HydrologyBufferStorage) GetTelegramsById(ctx context.Context, ids []uui
 
 	defer rowsPhenomenia.Close()
 
-	telegramMap := make(map[uuid.UUID]*model.Telegram)
+	telegramMap := make(map[uuid.UUID]*model.Telegram, cap(ids))
 	for _, t := range telegrams {
 		telegramMap[t.Id] = &t
 	}
