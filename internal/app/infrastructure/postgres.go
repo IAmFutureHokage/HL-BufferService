@@ -470,7 +470,7 @@ func (r *HydrologyBufferStorage) GetTelegramsById(ctx context.Context, ids []uui
 
 	defer rowsPhenomenia.Close()
 
-	telegramMap := make(map[uuid.UUID]*model.Telegram, cap(telegrams))
+	telegramMap := make(map[uuid.UUID]*model.Telegram, len(telegrams))
 	for _, t := range telegrams {
 		telegramMap[t.Id] = &t
 	}
