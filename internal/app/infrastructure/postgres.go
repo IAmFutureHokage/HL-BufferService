@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 
@@ -401,6 +402,7 @@ func (r *HydrologyBufferStorage) UpdateTelegram(ctx context.Context, updatedTele
 }
 
 func (r *HydrologyBufferStorage) GetTelegramsById(ctx context.Context, ids []uuid.UUID) ([]model.Telegram, error) {
+
 	selectBuilder := goqu.
 		Select(
 			goqu.I("t.id"),
@@ -442,23 +444,26 @@ func (r *HydrologyBufferStorage) GetTelegramsById(ctx context.Context, ids []uui
 		).
 		Where(goqu.I("t.id").In(ids))
 
-	sql, args, err := selectBuilder.ToSQL()
+	sqlScript, args, err := selectBuilder.ToSQL()
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := r.dbPool.Query(ctx, sql, args...)
+	rows, err := r.dbPool.Query(ctx, sqlScript, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
 	telegrams := make([]model.Telegram, 0, len(ids))
-	telegramMap := make(map[uuid.UUID]*model.Telegram, len(ids))
 
 	for rows.Next() {
 		var telegram model.Telegram
-		var phenomenia model.Phenomenia
+		var phenomeniaId *uuid.UUID
+		var phenomeniaTelegramId uuid.UUID
+		var phenomeniaPhenomen sql.NullByte
+		var phenomeniaIsUntensity sql.NullBool
+		var phenomeniaIntensity sql.NullByte
 
 		err := rows.Scan(
 			&telegram.Id,
@@ -487,25 +492,33 @@ func (r *HydrologyBufferStorage) GetTelegramsById(ctx context.Context, ids []uui
 			&telegram.IsReservoirWaterInflowDate,
 			&telegram.Inflow,
 			&telegram.Reset,
-			&phenomenia.Id,
-			&phenomenia.TelegramId,
-			&phenomenia.Phenomen,
-			&phenomenia.IsUntensity,
-			&phenomenia.Intensity,
+			&phenomeniaId,
+			&phenomeniaTelegramId,
+			&phenomeniaPhenomen,
+			&phenomeniaIsUntensity,
+			&phenomeniaIntensity,
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		if _, ok := telegramMap[telegram.Id]; !ok {
+		if len(telegrams) == 0 || telegram.Id != telegrams[len(telegrams)-1].Id {
 			telegrams = append(telegrams, telegram)
-			telegramMap[telegram.Id] = &telegrams[len(telegrams)-1]
 		}
 
-		if phenomenia.Id != uuid.Nil {
-			telegramMap[telegram.Id].IcePhenomenia = append(telegramMap[telegram.Id].IcePhenomenia, &phenomenia)
+		if phenomeniaId != nil {
+			telegrams[len(telegrams)-1].IcePhenomenia = append(telegrams[len(telegrams)-1].IcePhenomenia, &model.Phenomenia{
+				Id:          *phenomeniaId,
+				TelegramId:  phenomeniaTelegramId,
+				Phenomen:    phenomeniaPhenomen.Byte,
+				IsUntensity: phenomeniaIsUntensity.Bool,
+				Intensity:   phenomeniaIntensity,
+			})
 		}
+	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return telegrams, nil
