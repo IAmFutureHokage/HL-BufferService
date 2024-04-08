@@ -401,7 +401,7 @@ func (r *HydrologyBufferStorage) UpdateTelegram(ctx context.Context, updatedTele
 	return nil
 }
 
-func (r *HydrologyBufferStorage) GetTelegramsById(ctx context.Context, ids []uuid.UUID) ([]model.Telegram, error) {
+func (r *HydrologyBufferStorage) GetTelegramsById(ctx context.Context, ids []uuid.UUID) (*[]model.Telegram, error) {
 
 	selectBuilder := goqu.
 		Select(
@@ -521,5 +521,5 @@ func (r *HydrologyBufferStorage) GetTelegramsById(ctx context.Context, ids []uui
 		return nil, err
 	}
 
-	return telegrams, nil
+	return &telegrams, nil
 }
