@@ -20,10 +20,10 @@ import (
 
 type Strorage interface {
 	AddTelegram(ctx context.Context, data []model.Telegram) error
-	GetTelegramByID(ctx context.Context, id uuid.UUID) (model.Telegram, error)
+	GetTelegramByID(ctx context.Context, id uuid.UUID) (*model.Telegram, error)
 	RemoveTelegrams(ctx context.Context, ids []uuid.UUID) error
-	GetAll(ctx context.Context) ([]model.Telegram, error)
-	UpdateTelegram(ctx context.Context, updatedTelegram model.Telegram) error
+	GetAll(ctx context.Context) (*[]model.Telegram, error)
+	UpdateTelegram(ctx context.Context, updatedTelegram *model.Telegram) error
 	GetTelegramsById(ctx context.Context, ids []uuid.UUID) ([]model.Telegram, error)
 }
 
@@ -131,7 +131,7 @@ func (s *HydrologyBufferervice) UpdateTelegramByInfo(ctx context.Context, req *p
 		return nil, err
 	}
 
-	response := telegramToProto(&telegram)
+	response := telegramToProto(telegram)
 
 	return &pb.UpdateTelegramResponse{
 		Telegram: response,
@@ -168,7 +168,7 @@ func (s *HydrologyBufferervice) UpdateTelegramByCode(ctx context.Context, req *p
 		return nil, err
 	}
 
-	response := telegramToProto(&telegram)
+	response := telegramToProto(telegram)
 
 	return &pb.UpdateTelegramResponse{
 		Telegram: response,
@@ -187,7 +187,7 @@ func (s *HydrologyBufferervice) GetTelegram(ctx context.Context, req *pb.GetTele
 		return nil, err
 	}
 
-	response := telegramToProto(&telegram)
+	response := telegramToProto(telegram)
 
 	return &pb.GetTelegramResponse{
 		Telegram: response,
@@ -195,17 +195,16 @@ func (s *HydrologyBufferervice) GetTelegram(ctx context.Context, req *pb.GetTele
 }
 
 func (s *HydrologyBufferervice) GetTelegrams(ctx context.Context, req *pb.GetTelegramsRequest) (*pb.GetTelegramsResponse, error) {
-
 	telegrams, err := s.storage.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	response := make([]*pb.Telegram, len(telegrams))
+	response := make([]*pb.Telegram, len(*telegrams))
 
 	for i := 0; i < len(response); i++ {
-		telegram := *telegramToProto(&telegrams[i])
-		response[i] = &telegram
+		telegram := telegramToProto(&(*telegrams)[i]) // передаем указатель на элемент среза
+		response[i] = telegram
 	}
 
 	return &pb.GetTelegramsResponse{

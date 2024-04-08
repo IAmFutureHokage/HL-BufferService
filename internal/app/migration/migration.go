@@ -32,9 +32,10 @@ CREATE TABLE IF NOT EXISTS telegram (
 
 CREATE TABLE IF NOT EXISTS phenomenia (
     id TEXT PRIMARY KEY,
-    telegramid TEXT REFERENCES telegram(id),
+    telegramid TEXT,
     phenomen SMALLINT,
     isuntensity BOOLEAN,
-    intensity SMALLINT
+    intensity SMALLINT,
+    FOREIGN KEY (telegramId) REFERENCES telegram(id) ON DELETE CASCADE
 );
 `

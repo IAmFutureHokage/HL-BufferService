@@ -106,7 +106,7 @@ func (r *HydrologyBufferStorage) AddTelegram(ctx context.Context, data []model.T
 	return nil
 }
 
-func (r *HydrologyBufferStorage) GetTelegramByID(ctx context.Context, id uuid.UUID) (model.Telegram, error) {
+func (r *HydrologyBufferStorage) GetTelegramByID(ctx context.Context, id uuid.UUID) (*model.Telegram, error) {
 
 	selectBuilder := goqu.
 		From("telegram").
@@ -151,12 +151,12 @@ func (r *HydrologyBufferStorage) GetTelegramByID(ctx context.Context, id uuid.UU
 
 	sqlScript, args, err := selectBuilder.ToSQL()
 	if err != nil {
-		return model.Telegram{}, err
+		return &model.Telegram{}, err
 	}
 
 	rows, err := r.dbPool.Query(ctx, sqlScript, args...)
 	if err != nil {
-		return model.Telegram{}, err
+		return &model.Telegram{}, err
 	}
 	defer rows.Close()
 
@@ -204,7 +204,7 @@ func (r *HydrologyBufferStorage) GetTelegramByID(ctx context.Context, id uuid.UU
 			&phenomeniaIntensity,
 		)
 		if err != nil {
-			return model.Telegram{}, err
+			return &model.Telegram{}, err
 		}
 
 		if tg.Id != id {
@@ -223,14 +223,13 @@ func (r *HydrologyBufferStorage) GetTelegramByID(ctx context.Context, id uuid.UU
 	}
 
 	if err := rows.Err(); err != nil {
-		return model.Telegram{}, err
+		return &model.Telegram{}, err
 	}
 
-	return tg, nil
+	return &tg, nil
 }
 
 func (r *HydrologyBufferStorage) RemoveTelegrams(ctx context.Context, ids []uuid.UUID) error {
-
 	tx, err := r.dbPool.Begin(ctx)
 	if err != nil {
 		return err
@@ -247,12 +246,7 @@ func (r *HydrologyBufferStorage) RemoveTelegrams(ctx context.Context, ids []uuid
 		}
 	}()
 
-	result, err := tx.Exec(ctx, "DELETE FROM phenomenia WHERE telegramId = ANY($1)", ids)
-	if err != nil {
-		return err
-	}
-
-	result, err = tx.Exec(ctx, "DELETE FROM telegram WHERE id = ANY($1)", ids)
+	result, err := tx.Exec(ctx, "DELETE FROM telegram WHERE id = ANY($1)", ids)
 	if err != nil {
 		return err
 	}
@@ -263,7 +257,7 @@ func (r *HydrologyBufferStorage) RemoveTelegrams(ctx context.Context, ids []uuid
 	return nil
 }
 
-func (r *HydrologyBufferStorage) GetAll(ctx context.Context) ([]model.Telegram, error) {
+func (r *HydrologyBufferStorage) GetAll(ctx context.Context) (*[]model.Telegram, error) {
 
 	selectBuilder := goqu.
 		From("telegram").
@@ -382,10 +376,10 @@ func (r *HydrologyBufferStorage) GetAll(ctx context.Context) ([]model.Telegram, 
 		return nil, err
 	}
 
-	return telegrams, nil
+	return &telegrams, nil
 }
 
-func (r *HydrologyBufferStorage) UpdateTelegram(ctx context.Context, updatedTelegram model.Telegram) error {
+func (r *HydrologyBufferStorage) UpdateTelegram(ctx context.Context, updatedTelegram *model.Telegram) error {
 
 	tx, err := r.dbPool.Begin(ctx)
 	if err != nil {
