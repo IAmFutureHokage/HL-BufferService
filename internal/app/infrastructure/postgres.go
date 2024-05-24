@@ -468,7 +468,125 @@ func (r *HydrologyBufferStorage) UpdateTelegram(ctx context.Context, updatedTele
 	return nil
 }
 
-func (r *HydrologyBufferStorage) GetTelegramsById(ctx context.Context, ids []uuid.UUID) ([]model.Telegram, error) {
+func (r *HydrologyBufferStorage) GetTelegramsById(ctx context.Context, ids []uuid.UUID) (*[]model.Telegram, error) {
 
-	return nil, nil
+	selectBuilder := goqu.
+		Select(
+			goqu.I("t.id"),
+			goqu.I("t.groupid"),
+			goqu.I("t.telegramcode"),
+			goqu.I("t.postcode"),
+			goqu.I("t.datetime"),
+			goqu.I("t.endblocknum"),
+			goqu.I("t.isdangerous"),
+			goqu.I("t.waterlevelontime"),
+			goqu.I("t.deltawaterlevel"),
+			goqu.I("t.waterlevelon20h"),
+			goqu.I("t.watertemperature"),
+			goqu.I("t.airtemperature"),
+			goqu.I("t.icephenomeniastate"),
+			goqu.I("t.ice"),
+			goqu.I("t.snow"),
+			goqu.I("t.waterflow"),
+			goqu.I("t.precipitationvalue"),
+			goqu.I("t.precipitationduration"),
+			goqu.I("t.reservoirdate"),
+			goqu.I("t.headwaterlevel"),
+			goqu.I("t.averagereservoirlevel"),
+			goqu.I("t.downstreamlevel"),
+			goqu.I("t.reservoirvolume"),
+			goqu.I("t.isreservoirwaterinflowdate"),
+			goqu.I("t.inflow"),
+			goqu.I("t.reset"),
+			goqu.I("p.id"),
+			goqu.I("p.telegramid"),
+			goqu.I("p.phenomen"),
+			goqu.I("p.isuntensity"),
+			goqu.I("p.intensity"),
+		).
+		From(goqu.I("telegram").As("t")).
+		LeftJoin(
+			goqu.From(goqu.I("phenomenia")).As("p"),
+			goqu.On(goqu.Ex{"t.id": goqu.I("p.telegramid")}),
+		).
+		Where(goqu.I("t.id").In(ids))
+
+	sqlScript, args, err := selectBuilder.ToSQL()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := r.dbPool.Query(ctx, sqlScript, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	telegrams := make([]model.Telegram, 0, len(ids))
+
+	for rows.Next() {
+		var telegram model.Telegram
+		var phenomeniaId *uuid.UUID
+		var phenomeniaTelegramId uuid.UUID
+		var phenomeniaPhenomen sql.NullByte
+		var phenomeniaIsUntensity sql.NullBool
+		var phenomeniaIntensity sql.NullByte
+
+		err := rows.Scan(
+			&telegram.Id,
+			&telegram.GroupId,
+			&telegram.TelegramCode,
+			&telegram.PostCode,
+			&telegram.DateTime,
+			&telegram.EndBlockNum,
+			&telegram.IsDangerous,
+			&telegram.WaterLevelOnTime,
+			&telegram.DeltaWaterLevel,
+			&telegram.WaterLevelOn20h,
+			&telegram.WaterTemperature,
+			&telegram.AirTemperature,
+			&telegram.IcePhenomeniaState,
+			&telegram.Ice,
+			&telegram.Snow,
+			&telegram.Waterflow,
+			&telegram.PrecipitationValue,
+			&telegram.PrecipitationDuration,
+			&telegram.ReservoirDate,
+			&telegram.HeadwaterLevel,
+			&telegram.AverageReservoirLevel,
+			&telegram.DownstreamLevel,
+			&telegram.ReservoirVolume,
+			&telegram.IsReservoirWaterInflowDate,
+			&telegram.Inflow,
+			&telegram.Reset,
+			&phenomeniaId,
+			&phenomeniaTelegramId,
+			&phenomeniaPhenomen,
+			&phenomeniaIsUntensity,
+			&phenomeniaIntensity,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(telegrams) == 0 || telegram.Id != telegrams[len(telegrams)-1].Id {
+			telegrams = append(telegrams, telegram)
+		}
+
+		if phenomeniaId != nil {
+			telegrams[len(telegrams)-1].IcePhenomenia = append(telegrams[len(telegrams)-1].IcePhenomenia, &model.Phenomenia{
+				Id:          *phenomeniaId,
+				TelegramId:  phenomeniaTelegramId,
+				Phenomen:    phenomeniaPhenomen.Byte,
+				IsUntensity: phenomeniaIsUntensity.Bool,
+				Intensity:   phenomeniaIntensity,
+			})
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &telegrams, nil
 }

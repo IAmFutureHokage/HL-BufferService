@@ -24,7 +24,7 @@ type Strorage interface {
 	RemoveTelegrams(ctx context.Context, ids []uuid.UUID) error
 	GetAll(ctx context.Context) (*[]model.Telegram, error)
 	UpdateTelegram(ctx context.Context, updatedTelegram *model.Telegram) error
-	GetTelegramsById(ctx context.Context, ids []uuid.UUID) ([]model.Telegram, error)
+	GetTelegramsById(ctx context.Context, ids []uuid.UUID) (*[]model.Telegram, error)
 }
 
 type HydrologyBufferervice struct {
@@ -231,7 +231,7 @@ func (s *HydrologyBufferervice) TransferToSystem(ctx context.Context, req *pb.Tr
 
 	const maxBatchSize = 100 // Максимальное количество элементов в батче
 
-	numBatches := (len(telegrams)*2 + maxBatchSize - 1) / maxBatchSize
+	numBatches := (len(*telegrams)*2 + maxBatchSize - 1) / maxBatchSize
 	batches := make([]kafka_dto.WaterLevelRecords, numBatches)
 
 	for i := 0; i < len(batches); i++ {
@@ -243,7 +243,7 @@ func (s *HydrologyBufferervice) TransferToSystem(ctx context.Context, req *pb.Tr
 		batches[batchIdx].Waterlevels = append(batches[batchIdx].Waterlevels, wl)
 	}
 
-	for idx, telegram := range telegrams {
+	for idx, telegram := range *telegrams {
 		if telegram.WaterLevelOnTime.Valid && telegram.WaterLevelOnTime.Int32 != decoder_types.CouldNotMeasure {
 			addToBatch(kafka_dto.WaterLevel{
 				Date:       telegram.DateTime,
